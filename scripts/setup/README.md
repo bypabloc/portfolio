@@ -41,6 +41,7 @@ python scripts/run.py setup --action=up --services=gateway --env=local --verbose
 python scripts/run.py setup --action=up --services=all --env=local --verbose
 ```
 
+
 ### Gestión de entornos
 ```bash
 # Entorno local (desarrollo)
@@ -96,10 +97,8 @@ python scripts/run.py setup --action=clean --verbose
 - **Hot reload**: Habilitado en modo development
 
 ### Backend Microservices (AWS Lambda + FastAPI)
-- **personal-info**: Puerto `8001` - Información personal
-- **experience**: Puerto `8002` - Experiencia profesional
-- **projects**: Puerto `8003` - Portfolio de proyectos
-- **skills**: Puerto `8004` - Matriz de habilidades
+- **personal-info-lambda**: Puerto `8001` - Lambda para información personal
+- **skills-lambda**: Puerto `8002` - Lambda para gestión de habilidades
 
 ### Database (Neon PostgreSQL replica)
 - **Servicio**: `portfolio-db`
@@ -165,7 +164,7 @@ python scripts/run.py setup --action=clean --verbose
 - `--follow-logs` - Seguir logs en tiempo real después de levantar (default: false)
 
 **Microservices específicos:**
-- `--backend-services="personal-info|experience|projects|skills"` - Microservicios backend específicos
+- `--backend-services="personal-info|skills"` - Lambda functions específicas
 
 ## Ejemplos de uso
 
@@ -198,15 +197,16 @@ python scripts/run.py setup --env="local" --services="frontend,gateway"
 
 ### Microservices backend específicos
 ```bash
-# Solo servicio personal-info
+# Solo lambda personal-info
 python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info"
 
-# Personal-info + Experience
-python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info,experience"
+# Personal-info + Skills lambdas
+python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info,skills"
 
 # Todos los microservices backend
 python scripts/run.py setup --env="local" --services="backend" --backend-services="all"
 ```
+
 
 ### Diferentes entornos
 ```bash
@@ -281,15 +281,8 @@ portfolio/
 │   ├── docker-compose.prod.yml         # Override para prod
 │   ├── frontend/
 │   │   └── Dockerfile                  # Astro v5 container
-│   ├── backend/
-│   │   ├── personal-info/
-│   │   │   └── Dockerfile             # FastAPI Lambda container
-│   │   ├── experience/
-│   │   │   └── Dockerfile
-│   │   ├── projects/
-│   │   │   └── Dockerfile
-│   │   └── skills/
-│   │       └── Dockerfile
+│   ├── backend/                        # (Obsoleto - ver server/ en root)
+│   │   └── README.md                   # Referencia a nueva estructura en server/
 │   ├── nginx/
 │   │   ├── nginx.conf                 # API Gateway config
 │   │   └── Dockerfile
@@ -374,7 +367,7 @@ El script verifica:
 docker-compose logs -f portfolio-frontend
 
 # Ver logs de todos los backend services
-docker-compose logs -f personal-info experience projects skills
+docker-compose logs -f personal-info-lambda skills-lambda
 
 # Ver logs con timestamps
 docker-compose logs -f --timestamps

@@ -2,7 +2,7 @@
 # Enables Neon serverless driver compatibility with local PostgreSQL
 # Based on community Dockerfile by TimoWilhelm
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install dependencies
 RUN apk add --no-cache git

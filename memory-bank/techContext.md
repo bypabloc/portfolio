@@ -286,7 +286,7 @@ docker system prune -a                   # Clean up Docker resources
 Compute:
   - AWS Lambda (Python 3.12 runtime)
   - API Gateway v2 (HTTP APIs)
-  - Lambda Layers for shared dependencies
+  - Direct dependencies per function
 
 Storage & Data:
   - Neon PostgreSQL (external managed service)

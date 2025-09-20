@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+import yaml
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -501,7 +502,7 @@ def check_required_ports(services_list: List[str], verbose: bool = False) -> Lis
 
 
 def build_docker_compose_command(config_files: Dict[str, str], env: str,
-                                compose_cmd: str) -> List[str]:
+                                compose_cmd: str, profiles: List[str] = None) -> List[str]:
     """
     Construye el comando docker-compose con archivos de configuración.
 
@@ -509,6 +510,7 @@ def build_docker_compose_command(config_files: Dict[str, str], env: str,
         config_files: Archivos de configuración encontrados
         env: Entorno objetivo
         compose_cmd: Comando docker-compose a usar
+        profiles: Lista de profiles a activar
 
     Returns:
         List[str]: Comando completo como lista
@@ -522,6 +524,11 @@ def build_docker_compose_command(config_files: Dict[str, str], env: str,
     # Agregar override del entorno si existe
     if env in config_files:
         cmd_parts.extend(['-f', config_files[env]])
+
+    # Agregar profiles si se especificaron
+    if profiles:
+        for profile in profiles:
+            cmd_parts.extend(['--profile', profile])
 
     return cmd_parts
 
@@ -547,11 +554,11 @@ def get_service_names_for_compose(services_list: List[str],
             compose_services.append('portfolio-frontend')
         elif service == 'backend':
             for backend_service in backend_services_list:
-                compose_services.append(backend_service)
+                compose_services.append(f'{backend_service}-lambda')
         elif service == 'db':
             compose_services.append('portfolio-db')
         elif service == 'gateway':
-            compose_services.append('portfolio-gateway')
+            compose_services.append('api-gateway')
 
     return compose_services
 
@@ -830,8 +837,11 @@ def main(flags: Dict[str, Any]) -> None:
     elif verbose:
         print(f"⚠️  No se encontró archivo .env para entorno {env}")
 
+    # Determinar profiles necesarios basado en servicios
+    profiles = []
+
     # Construir comando docker-compose
-    cmd_parts = build_docker_compose_command(config_files, env, compose_cmd)
+    cmd_parts = build_docker_compose_command(config_files, env, compose_cmd, profiles)
 
     # Obtener nombres de servicios para docker-compose
     compose_services = get_service_names_for_compose(services_list, backend_services_list)
@@ -867,6 +877,16 @@ def main(flags: Dict[str, Any]) -> None:
                 # Esperar a que servicios estén healthy
                 if wait_for_services_health(cmd_parts, compose_services, project_path, 60, verbose):
                     print("🎉 Todos los servicios están operativos")
+
+                    # Configurar LocalStack API Gateway si está presente
+                    if 'localstack' in [s.lower() for s in compose_services] or 'all' in services_list:
+                        if verbose:
+                            print("\n🌐 Configurando LocalStack API Gateway...")
+
+                        if setup_localstack_api_gateway(project_path, verbose):
+                            print("✅ LocalStack API Gateway configurado exitosamente")
+                        else:
+                            print("⚠️  LocalStack API Gateway no pudo ser configurado completamente")
                 else:
                     print("⚠️  Algunos servicios pueden no estar completamente listos")
 
@@ -933,3 +953,360 @@ def main(flags: Dict[str, Any]) -> None:
 
     if verbose:
         print(f"\n🎯 Operación '{action}' completada")
+
+
+def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) -> Dict[str, Dict[str, Any]]:
+    """
+    Detecta y parsea archivos api-gateway.yml en funciones lambda.
+
+    Args:
+        project_path: Ruta raíz del proyecto
+        verbose: Mostrar información detallada
+
+    Returns:
+        Dict con nombre de lambda y su configuración API Gateway
+    """
+    configs = {}
+    lambda_base_path = Path(project_path) / "server" / "lambda"
+
+    if not lambda_base_path.exists():
+        if verbose:
+            print("⚠️  No se encontró directorio server/lambda")
+        return configs
+
+    # Buscar directorios de lambdas
+    for lambda_dir in lambda_base_path.iterdir():
+        if lambda_dir.is_dir() and not lambda_dir.name.startswith('.'):
+            api_gateway_file = lambda_dir / "setup" / "api-gateway.yml"
+
+            if api_gateway_file.exists():
+                try:
+                    with open(api_gateway_file, 'r', encoding='utf-8') as f:
+                        config = yaml.safe_load(f)
+                        configs[lambda_dir.name] = config
+                        if verbose:
+                            print(f"✅ Configuración API Gateway encontrada: {lambda_dir.name}")
+                except yaml.YAMLError as e:
+                    if verbose:
+                        print(f"❌ Error parseando {api_gateway_file}: {e}")
+                except Exception as e:
+                    if verbose:
+                        print(f"❌ Error leyendo {api_gateway_file}: {e}")
+            elif verbose:
+                print(f"⚠️  No se encontró api-gateway.yml en {lambda_dir.name}/setup/")
+
+    return configs
+
+
+def check_localstack_ready(max_attempts: int = 30, verbose: bool = False) -> bool:
+    """
+    Verifica si LocalStack está listo para recibir comandos.
+
+    Args:
+        max_attempts: Número máximo de intentos
+        verbose: Mostrar información detallada
+
+    Returns:
+        bool: True si LocalStack está listo
+    """
+    if verbose:
+        print("🔍 Verificando estado de LocalStack...")
+
+    for attempt in range(max_attempts):
+        try:
+            result = subprocess.run(
+                ["docker", "exec", "portfolio-localstack", "awslocal", "sts", "get-caller-identity"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+            if result.returncode == 0:
+                if verbose:
+                    print("✅ LocalStack está listo")
+                return True
+
+        except subprocess.TimeoutExpired:
+            if verbose:
+                print(f"⏳ Intento {attempt + 1}/{max_attempts} - LocalStack aún no responde...")
+        except Exception as e:
+            if verbose:
+                print(f"⏳ Intento {attempt + 1}/{max_attempts} - Error: {e}")
+
+        if attempt < max_attempts - 1:
+            time.sleep(5)
+
+    return False
+
+
+def initialize_localstack_api_gateway(project_path: str, verbose: bool = False) -> bool:
+    """
+    Inicializa LocalStack y ejecuta el script de configuración API Gateway.
+
+    Args:
+        project_path: Ruta raíz del proyecto
+        verbose: Mostrar información detallada
+
+    Returns:
+        bool: True si la inicialización fue exitosa
+    """
+    localstack_script = Path(project_path) / "scripts" / "setup" / "localstack" / "init-api-gateway.sh"
+
+    if not localstack_script.exists():
+        if verbose:
+            print(f"❌ Script de LocalStack no encontrado: {localstack_script}")
+        return False
+
+    try:
+        if verbose:
+            print("🚀 Inicializando LocalStack API Gateway...")
+
+        # Hacer el script ejecutable
+        subprocess.run(["chmod", "+x", str(localstack_script)], check=True)
+
+        # Copiar y ejecutar script de inicialización usando docker cp
+        temp_script = "/tmp/localstack-init.sh"
+
+        # Copiar script al contenedor
+        copy_result = subprocess.run(
+            ["docker", "cp", str(localstack_script), f"portfolio-localstack:{temp_script}"],
+            capture_output=True,
+            text=True
+        )
+
+        if copy_result.returncode != 0:
+            if verbose:
+                print(f"❌ Error copiando script: {copy_result.stderr}")
+            return False
+
+        # Hacer ejecutable y ejecutar
+        result = subprocess.run(
+            ["docker", "exec", "portfolio-localstack", "bash", "-c", f"chmod +x {temp_script} && {temp_script}"],
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+
+        if result.returncode == 0:
+            if verbose:
+                print("✅ LocalStack API Gateway inicializado correctamente")
+                print(result.stdout)
+            return True
+        else:
+            if verbose:
+                print("❌ Error inicializando LocalStack API Gateway")
+                print(f"stderr: {result.stderr}")
+            return False
+
+    except subprocess.TimeoutExpired:
+        if verbose:
+            print("❌ Timeout inicializando LocalStack")
+        return False
+    except Exception as e:
+        if verbose:
+            print(f"❌ Error ejecutando script de LocalStack: {e}")
+        return False
+
+
+def configure_lambda_api_gateway(lambda_name: str, config: Dict[str, Any], verbose: bool = False) -> bool:
+    """
+    Configura API Gateway para una función lambda específica usando awslocal.
+
+    Args:
+        lambda_name: Nombre de la función lambda
+        config: Configuración API Gateway desde el archivo YAML
+        verbose: Mostrar información detallada
+
+    Returns:
+        bool: True si la configuración fue exitosa
+    """
+    try:
+        if verbose:
+            print(f"🔧 Configurando API Gateway para {lambda_name}...")
+
+        # Leer configuración existente de LocalStack
+        get_api_result = subprocess.run(
+            ["docker", "exec", "portfolio-localstack", "cat", "/tmp/localstack-config.json"],
+            capture_output=True,
+            text=True
+        )
+
+        if get_api_result.returncode != 0:
+            if verbose:
+                print("❌ No se pudo leer configuración de LocalStack")
+            return False
+
+        localstack_config = json.loads(get_api_result.stdout)
+        api_id = localstack_config["api_id"]
+        root_resource_id = localstack_config["root_resource_id"]
+
+        # Extraer configuración de la lambda
+        api_gateway_config = config.get("api_gateway", {})
+        resource_config = api_gateway_config.get("resource", {})
+        methods_config = api_gateway_config.get("methods", [])
+
+        resource_path = resource_config.get("path", lambda_name)
+
+        # Crear recurso para la lambda
+        create_resource_cmd = [
+            "awslocal", "apigateway", "create-resource",
+            "--rest-api-id", api_id,
+            "--parent-id", root_resource_id,
+            "--path-part", resource_path
+        ]
+
+        resource_result = subprocess.run(
+            ["docker", "exec", "portfolio-localstack"] + create_resource_cmd,
+            capture_output=True,
+            text=True
+        )
+
+        if resource_result.returncode != 0:
+            if verbose:
+                print(f"❌ Error creando recurso {resource_path}: {resource_result.stderr}")
+            return False
+
+        resource_data = json.loads(resource_result.stdout)
+        resource_id = resource_data["id"]
+
+        if verbose:
+            print(f"✅ Recurso creado: /{resource_path} (ID: {resource_id})")
+
+        # Configurar métodos HTTP
+        for method_config in methods_config:
+            http_method = method_config.get("http_method", "GET")
+
+            # Crear método
+            put_method_cmd = [
+                "awslocal", "apigateway", "put-method",
+                "--rest-api-id", api_id,
+                "--resource-id", resource_id,
+                "--http-method", http_method,
+                "--authorization-type", "NONE"
+            ]
+
+            method_result = subprocess.run(
+                ["docker", "exec", "portfolio-localstack"] + put_method_cmd,
+                capture_output=True,
+                text=True
+            )
+
+            if method_result.returncode != 0:
+                if verbose:
+                    print(f"⚠️  Método {http_method} ya existe o error: {method_result.stderr}")
+            else:
+                if verbose:
+                    print(f"✅ Método {http_method} creado")
+
+            # Crear integración con Lambda
+            lambda_uri = f"arn:aws:lambda:us-east-1:000000000000:function:{lambda_name}"
+
+            put_integration_cmd = [
+                "awslocal", "apigateway", "put-integration",
+                "--rest-api-id", api_id,
+                "--resource-id", resource_id,
+                "--http-method", http_method,
+                "--type", "AWS_PROXY",
+                "--integration-http-method", "POST",
+                "--uri", f"arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
+            ]
+
+            integration_result = subprocess.run(
+                ["docker", "exec", "portfolio-localstack"] + put_integration_cmd,
+                capture_output=True,
+                text=True
+            )
+
+            if integration_result.returncode == 0:
+                if verbose:
+                    print(f"✅ Integración Lambda configurada para {http_method}")
+            elif verbose:
+                print(f"⚠️  Error configurando integración: {integration_result.stderr}")
+
+        return True
+
+    except Exception as e:
+        if verbose:
+            print(f"❌ Error configurando {lambda_name}: {e}")
+        return False
+
+
+def setup_localstack_api_gateway(project_path: str, verbose: bool = False) -> bool:
+    """
+    Setup completo de LocalStack API Gateway basado en configuraciones de lambdas.
+
+    Args:
+        project_path: Ruta raíz del proyecto
+        verbose: Mostrar información detallada
+
+    Returns:
+        bool: True si el setup fue exitoso
+    """
+    if verbose:
+        print("🌐 Configurando LocalStack API Gateway...")
+
+    # 1. Verificar que LocalStack esté corriendo
+    if not check_localstack_ready(max_attempts=30, verbose=verbose):
+        if verbose:
+            print("❌ LocalStack no está disponible")
+        return False
+
+    # 2. Inicializar LocalStack API Gateway
+    if not initialize_localstack_api_gateway(project_path, verbose):
+        if verbose:
+            print("❌ Error inicializando LocalStack")
+        return False
+
+    # 3. Detectar configuraciones de lambdas
+    lambda_configs = find_lambda_api_gateway_configs(project_path, verbose)
+
+    if not lambda_configs:
+        if verbose:
+            print("⚠️  No se encontraron configuraciones de API Gateway")
+        return True
+
+    # 4. Configurar cada lambda
+    success_count = 0
+    for lambda_name, config in lambda_configs.items():
+        if configure_lambda_api_gateway(lambda_name, config, verbose):
+            success_count += 1
+
+    # 5. Redesplegar API Gateway
+    try:
+        get_api_result = subprocess.run(
+            ["docker", "exec", "portfolio-localstack", "cat", "/tmp/localstack-config.json"],
+            capture_output=True,
+            text=True
+        )
+
+        if get_api_result.returncode == 0:
+            localstack_config = json.loads(get_api_result.stdout)
+            api_id = localstack_config["api_id"]
+            stage_name = localstack_config["stage_name"]
+
+            deploy_cmd = [
+                "awslocal", "apigateway", "create-deployment",
+                "--rest-api-id", api_id,
+                "--stage-name", stage_name,
+                "--description", f"Portfolio API deployment with {success_count} lambdas"
+            ]
+
+            deploy_result = subprocess.run(
+                ["docker", "exec", "portfolio-localstack"] + deploy_cmd,
+                capture_output=True,
+                text=True
+            )
+
+            if deploy_result.returncode == 0:
+                if verbose:
+                    print(f"🚀 API Gateway desplegado con {success_count} lambdas")
+                    print(f"🌐 URL de la API: http://localhost:4566/restapis/{api_id}/{stage_name}/_user_request_")
+                return True
+            elif verbose:
+                print(f"⚠️  Error desplegando API: {deploy_result.stderr}")
+
+    except Exception as e:
+        if verbose:
+            print(f"❌ Error desplegando API Gateway: {e}")
+
+    return success_count > 0

@@ -34,7 +34,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - postgres-logs:/var/log/postgresql
       - ./database/init-portfolio-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ../db/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     ports:
       - "5432:5432"
     networks:
@@ -60,7 +60,7 @@ services:
     environment:
       - NODE_ENV=development
     volumes:
-      - ./database/neon-proxy-config.json:/app/config.json:ro
+      - ../db/neon-proxy-config.json:/app/config.json:ro
     ports:
       - "5433:5433"
     networks:
@@ -73,12 +73,13 @@ services:
       retries: 3
       start_period: 20s
 
-  # Backend Microservices - AWS Lambda simulation with FastAPI
-  personal-info-service:
+
+  # FastAPI Services - Direct HTTP access for development
+  personal-info-lambda:
     build:
-      context: ./server/personal-info
-      dockerfile: Dockerfile
-    container_name: personal-info-service
+      context: ../server
+      dockerfile: lambda/personal-info/Dockerfile.dev
+    container_name: personal-info-lambda
     restart: unless-stopped
     depends_on:
       portfolio-db:
@@ -86,17 +87,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=personal-info
       - LOG_LEVEL=info
-      - LAMBDA_RUNTIME_DIR=/var/runtime
-      - AWS_LAMBDA_RUNTIME_API=localhost:9001
     ports:
       - "8001:8080"
     networks:
       portfolio-network:
         ipv4_address: 172.20.0.21
-    volumes:
-      - ./server/personal-info/src:/app/src:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -104,11 +100,11 @@ services:
       retries: 3
       start_period: 30s
 
-  experience-service:
+  skills-lambda:
     build:
-      context: ./server/experience
-      dockerfile: Dockerfile
-    container_name: experience-service
+      context: ../server
+      dockerfile: lambda/skills/Dockerfile
+    container_name: skills-lambda
     restart: unless-stopped
     depends_on:
       portfolio-db:
@@ -116,27 +112,24 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=experience
       - LOG_LEVEL=info
     ports:
       - "8002:8080"
     networks:
       portfolio-network:
         ipv4_address: 172.20.0.22
-    volumes:
-      - ./server/experience/src:/app/src:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-  projects-service:
+  experience-lambda:
     build:
-      context: ./server/projects
-      dockerfile: Dockerfile
-    container_name: projects-service
+      context: ../server
+      dockerfile: lambda/experience/Dockerfile
+    container_name: experience-lambda
     restart: unless-stopped
     depends_on:
       portfolio-db:
@@ -144,27 +137,24 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=projects
       - LOG_LEVEL=info
     ports:
       - "8003:8080"
     networks:
       portfolio-network:
         ipv4_address: 172.20.0.23
-    volumes:
-      - ./server/projects/src:/app/src:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-  skills-service:
+  projects-lambda:
     build:
-      context: ./server/skills
-      dockerfile: Dockerfile
-    container_name: skills-service
+      context: ../server
+      dockerfile: lambda/projects/Dockerfile
+    container_name: projects-lambda
     restart: unless-stopped
     depends_on:
       portfolio-db:
@@ -172,17 +162,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=skills
       - LOG_LEVEL=info
     ports:
       - "8004:8080"
     networks:
       portfolio-network:
         ipv4_address: 172.20.0.24
-    volumes:
-      - ./server/skills/src:/app/src:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -196,10 +183,10 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     depends_on:
-      - personal-info-service
-      - experience-service
-      - projects-service
-      - skills-service
+      - personal-info-lambda
+      - skills-lambda
+      - experience-lambda
+      - projects-lambda
     environment:
       - NGINX_ENV=development
     ports:
@@ -262,3 +249,37 @@ services:
     working_dir: /workspace
     profiles:
       - tools
+
+  # LocalStack - AWS Services Emulation for Local Development
+  localstack:
+    image: localstack/localstack:latest
+    container_name: portfolio-localstack
+    restart: unless-stopped
+    environment:
+      - SERVICES=lambda,apigateway,iam,sts,logs,cloudformation
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOSTNAME_EXTERNAL=localstack
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - LAMBDA_EXECUTOR=docker
+      - LAMBDA_DOCKER_NETWORK=portfolio_portfolio-network
+      - LAMBDA_REMOVE_CONTAINERS=true
+      - API_GATEWAY_ENDPOINT_STRATEGY=domain
+    ports:
+      - "4566:4566"  # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services port range
+    networks:
+      portfolio-network:
+        ipv4_address: 172.20.0.50
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "../scripts/setup/localstack:/etc/localstack/init/ready.d"
+      - "./localstack-data:/var/lib/localstack"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

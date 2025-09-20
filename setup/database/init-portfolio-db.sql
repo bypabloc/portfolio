@@ -16,6 +16,11 @@ CREATE DATABASE portfolio_staging;
 -- Connect to portfolio_local for initial schema setup
 \c portfolio_local;
 
+-- Enable required extensions in this database
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+CREATE EXTENSION IF NOT EXISTS "btree_gin";
+
 -- Personal Information Table
 CREATE TABLE personal_info (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

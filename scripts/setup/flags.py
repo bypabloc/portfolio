@@ -42,7 +42,7 @@ def flag(flags_dict):
         'project_path': '',                # auto-detect del proyecto
         'verbose': False,                  # sin información detallada por defecto
         'follow_logs': False,              # no seguir logs por defecto
-        'backend_services': 'all'          # todos los microservicios backend
+        'backend_services': 'all',         # todos los microservicios backend
     }
 
     # Validar flags permitidas
@@ -75,19 +75,20 @@ def flag(flags_dict):
             f"Valores válidas: {', '.join(valid_actions)}"
         )
 
-    # Procesar backend_services si se especificó
-    backend_services_list = ['personal-info', 'experience', 'projects', 'skills', 'all']
+    # Procesar backend_services si se especificó (AWS Lambda functions)
+    backend_services_list = ['personal-info', 'skills', 'all']
     if flags_dict['backend_services'] != 'all':
         specified_services = [s.strip() for s in flags_dict['backend_services'].split(',') if s.strip()]
         for service in specified_services:
             if service not in backend_services_list:
                 raise ValueError(
-                    f"Microservicio backend inválido: {service}. "
+                    f"Lambda function inválida: {service}. "
                     f"Valores válidos: {', '.join(backend_services_list)}"
                 )
         flags_dict['backend_services_list'] = specified_services
     else:
-        flags_dict['backend_services_list'] = ['personal-info', 'experience', 'projects', 'skills']
+        flags_dict['backend_services_list'] = ['personal-info', 'skills']
+
 
     # Procesar services como lista
     flags_dict['services_list'] = services_list
@@ -109,6 +110,7 @@ def flag(flags_dict):
                 "--backend-services con al menos un microservicio válido"
             )
 
+
     # Mostrar configuración si no es modo silencioso
     if not flags_dict.get('_invoked_from') == 'cli' or flags_dict.get('verbose'):
         print("🐳 Configuración docker_env:")
@@ -125,6 +127,7 @@ def flag(flags_dict):
                 print(f"  🔧 Backend: Todos los microservicios")
             else:
                 print(f"  🔧 Backend: {', '.join(flags_dict['backend_services_list'])}")
+
 
         if flags_dict.get('build'):
             print(f"  🔨 Rebuild: Habilitado")

@@ -1,7 +1,7 @@
 # Frontend Service - Astro v5 with TypeScript
 # Portfolio Serverless System
 
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \

@@ -18,73 +18,21 @@ services:
       - NODE_ENV=development
       - LOG_LEVEL=debug
 
-  # Personal Info Service - Local development
-  personal-info-service:
+  # Personal Info Lambda - Local development
+  personal-info-lambda:
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=personal-info
       - LOG_LEVEL=debug
-      - HOT_RELOAD=true
       - DEBUG_MODE=true
     volumes:
-      - ./server/personal-info/src:/app/src
-      - ./server/personal-info/tests:/app/tests
-    ports:
-      - "8001:8080"
-      - "9001:9001"  # Debug port
+      - ../server/lambda/personal-info:/var/task:ro  # Lambda function code
 
-  # Experience Service - Local development
-  experience-service:
+  # Skills Lambda - Local development
+  skills-lambda:
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=experience
       - LOG_LEVEL=debug
-      - HOT_RELOAD=true
       - DEBUG_MODE=true
     volumes:
-      - ./server/experience/src:/app/src
-      - ./server/experience/tests:/app/tests
-    ports:
-      - "8002:8080"
-      - "9002:9001"  # Debug port
-
-  # Projects Service - Local development
-  projects-service:
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=projects
-      - LOG_LEVEL=debug
-      - HOT_RELOAD=true
-      - DEBUG_MODE=true
-    volumes:
-      - ./server/projects/src:/app/src
-      - ./server/projects/tests:/app/tests
-    ports:
-      - "8003:8080"
-      - "9003:9001"  # Debug port
-
-  # Skills Service - Local development
-  skills-service:
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
-      - SERVICE_NAME=skills
-      - LOG_LEVEL=debug
-      - HOT_RELOAD=true
-      - DEBUG_MODE=true
-    volumes:
-      - ./server/skills/src:/app/src
-      - ./server/skills/tests:/app/tests
-    ports:
-      - "8004:8080"
-      - "9004:9001"  # Debug port
+      - ../server/lambda/skills:/var/task:ro  # Lambda function code
 
   # API Gateway - Local development
   api-gateway:
@@ -113,6 +61,7 @@ services:
     ports:
       - "4321:4321"
       - "24678:24678"  # Vite HMR port
+
 
   # Development Tools
   dev-tools:

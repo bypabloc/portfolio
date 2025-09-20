@@ -1,0 +1,30 @@
+# Personal Info Service - Python Dependencies
+# FastAPI + AWS Lambda + SQLModel + Shared Modules
+
+# Core Framework
+fastapi==0.115.5
+mangum==0.18.0
+uvicorn[standard]==0.32.1
+
+# SQLModel + Database
+sqlmodel==0.0.22
+asyncpg==0.29.0
+sqlalchemy[asyncio]==2.0.36
+
+# Pydantic with email validation
+pydantic[email]==2.10.3
+pydantic-settings==2.6.1
+
+# AWS Lambda Runtime
+aws-lambda-powertools[all]==3.2.1
+
+# HTTP Client
+httpx==0.28.1
+
+# Utilities
+python-multipart==0.0.20
+python-dotenv==1.0.1
+
+# Development and Testing (for local development)
+pytest==8.3.4
+pytest-asyncio==0.24.0

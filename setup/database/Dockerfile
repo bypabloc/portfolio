@@ -21,7 +21,7 @@ RUN mkdir -p /etc/postgresql
 
 # Copy initialization scripts
 COPY init-portfolio-db.sql /docker-entrypoint-initdb.d/
-COPY postgresql.conf /etc/postgresql/
+# Note: postgresql.conf is mounted as volume in docker-compose
 
 # Expose PostgreSQL port
 EXPOSE 5432

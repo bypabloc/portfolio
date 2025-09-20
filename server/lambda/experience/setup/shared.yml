@@ -1,0 +1,95 @@
+# Shared modules configuration for experience Lambda function
+# This file specifies which modules from server/shared/ should be included
+# when deploying this Lambda function
+
+name: experience
+description: Professional experience management Lambda function
+
+# Shared modules to include (granular selection)
+shared:
+  # Database connection and session management
+  database:
+    - connection.py     # DatabaseManager, get_async_session
+    - base.py          # BaseTable, BaseSchema, TimestampMixin
+    - mixins.py        # MetadataMixin, TagMixin, OrderingMixin
+
+  # Models and schemas
+  models:
+    - base.py          # HealthResponse, APIResponse, PaginationParams
+    - common.py        # Field types and validators
+    - mixins.py        # TimestampMixin, StatusMixin, OrderingMixin
+
+  # Repository pattern
+  repository:
+    - base.py          # BaseRepository
+    - crud.py          # CRUDRepository
+    - mixins.py        # SearchMixin, StatusMixin, DateRangeMixin
+
+  # Configuration management
+  config:
+    - settings.py      # ApplicationSettings, get_settings
+    - database.py      # DatabaseConfig
+    - environment.py   # Environment detection
+
+  # Utilities
+  utils:
+    - logger.py        # get_logger, logging decorators
+    - datetime_utils.py # utc_now, date formatting
+    - serializers.py   # JSON serialization
+
+  # Exception handling
+  exceptions:
+    - base.py          # PortfolioBaseException, ValidationError
+    - database.py      # DatabaseError, RepositoryError
+    - validation.py    # SchemaValidationError
+
+# Deployment configuration
+deployment:
+  # Copy strategy: 'symlink' | 'copy' | 'bundle'
+  strategy: copy
+
+  # Target directory in Lambda function (relative to src/)
+  target_dir: shared
+
+  # Whether to maintain directory structure
+  preserve_structure: true
+
+  # Whether to include __pycache__ and .pyc files
+  include_compiled: false
+
+  # Custom file patterns to exclude
+  exclude_patterns:
+    - "*.md"
+    - "*.txt"
+    - "test_*"
+    - "*_test.py"
+
+# Dependencies specific to this function
+dependencies:
+  required:
+    - fastapi
+    - sqlmodel
+    - asyncpg
+    - pydantic
+    - aws-lambda-powertools
+
+  optional:
+    - pytest  # for testing
+
+# Environment variables needed
+environment:
+  required:
+    - DATABASE_URL
+    - ENVIRONMENT
+
+  optional:
+    - LOG_LEVEL
+    - DEBUG_MODE
+
+# Health check configuration
+health_check:
+  enabled: true
+  endpoint: /health
+  dependencies:
+    - database
+    - shared_modules

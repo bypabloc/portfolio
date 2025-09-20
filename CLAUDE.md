@@ -249,8 +249,11 @@ The documentation is designed to be implementation-agnostic but follows modern 2
 
 ## Importaciones
 
-@./docs/readme.md
+@./setup/README.md
+@./db/README.md
+@./server/README.md
 @./scripts/README.md
+
 @./memory-bank/projectbrief.md
 @./memory-bank/productContext.md
 @./memory-bank/systemPatterns.md
