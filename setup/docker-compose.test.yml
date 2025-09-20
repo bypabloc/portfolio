@@ -11,8 +11,14 @@ services:
       - POSTGRES_PASSWORD=portfolio_password
       - PGDATA=/var/lib/postgresql/data/pgdata
     command: ["postgres", "-c", "log_statement=none", "-c", "log_duration=off"]
+    volumes:
+      # Solo mantener logs y config, sin el volumen de datos
+      - postgres-logs:/var/log/postgresql
+      - ./database/init-portfolio-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     tmpfs:
-      - /var/lib/postgresql/data:noexec,nosuid,size=512m
+      # Base de datos en memoria para testing rápido - usar ruta diferente para evitar conflicto
+      - /var/lib/postgresql/data/pgdata:noexec,nosuid,size=512m
 
   # Neon Proxy - Test configuration
   neon-proxy:

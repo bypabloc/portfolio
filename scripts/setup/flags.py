@@ -52,7 +52,7 @@ def flag(flags_dict):
     flags_dict = set_default_values(flags_dict, defaults)
 
     # Validar valores específicos
-    valid_envs = ['local', 'test', 'dev', 'prod']
+    valid_envs = ['local', 'test', 'dev', 'release', 'prod']
     if flags_dict['env'] not in valid_envs:
         raise ValueError(
             f"Entorno inválido: {flags_dict['env']}. "
