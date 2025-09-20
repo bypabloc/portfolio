@@ -6,6 +6,77 @@ Automatiza la gestión de contenedores para el desarrollo local, testing, desarr
 
 🏗️ **Arquitectura**: Replica la arquitectura serverless en contenedores para desarrollo local con separación completa frontend/backend.
 
+## 🚀 Comandos rápidos
+
+### Base de datos (DB)
+```bash
+# Levantar solo la base de datos
+python scripts/run.py setup --action=up --services=db --env=local --verbose
+
+# Ver logs de la base de datos
+python scripts/run.py setup --action=logs --services=db --env=local
+
+# Parar la base de datos
+python scripts/run.py setup --action=down --services=db --env=local
+
+# Reiniciar la base de datos
+python scripts/run.py setup --action=restart --services=db --env=local
+
+# Ver estado de la base de datos
+python scripts/run.py setup --action=status --services=db --env=local
+```
+
+### Servicios específicos
+```bash
+# Solo frontend (Astro v5)
+python scripts/run.py setup --action=up --services=frontend --env=local --verbose
+
+# Solo backend (todos los microservices)
+python scripts/run.py setup --action=up --services=backend --env=local --verbose
+
+# Solo API Gateway
+python scripts/run.py setup --action=up --services=gateway --env=local --verbose
+
+# Todos los servicios
+python scripts/run.py setup --action=up --services=all --env=local --verbose
+```
+
+### Gestión de entornos
+```bash
+# Entorno local (desarrollo)
+python scripts/run.py setup --action=up --env=local --verbose
+
+# Entorno de testing
+python scripts/run.py setup --action=up --env=test --verbose
+
+# Entorno de desarrollo
+python scripts/run.py setup --action=up --env=dev --verbose
+
+# Entorno de release/staging
+python scripts/run.py setup --action=up --env=release --verbose
+
+# Entorno de producción
+python scripts/run.py setup --action=up --env=prod --verbose
+```
+
+### Operaciones comunes
+```bash
+# Ver estado de todos los servicios
+python scripts/run.py setup --action=status --verbose
+
+# Ver logs en tiempo real
+python scripts/run.py setup --action=logs --follow-logs
+
+# Reiniciar todo el entorno
+python scripts/run.py setup --action=restart --env=local
+
+# Bajar todo el entorno
+python scripts/run.py setup --action=down --env=local
+
+# Limpiar recursos Docker
+python scripts/run.py setup --action=clean --verbose
+```
+
 ## ¿Qué hace?
 
 - 🚀 **Levanta entornos completos** con un solo comando
@@ -190,15 +261,23 @@ python scripts/run.py setup --env="test" --build --verbose
 
 ## Estructura de archivos Docker
 
-El script espera esta estructura en el proyecto:
+El script busca automáticamente los archivos de configuración Docker en estas ubicaciones:
+
+**Ubicaciones de búsqueda:**
+- `./docker-compose.yml` (raíz del proyecto)
+- `./docker/docker-compose.yml` (carpeta docker tradicional)
+- `./setup/docker-compose.yml` (carpeta setup - recomendada) ✅
+
+**Estructura recomendada:**
 
 ```
 portfolio/
-├── setup/
+├── setup/                              # ← Ubicación actual de archivos Docker
 │   ├── docker-compose.yml              # Configuración base
 │   ├── docker-compose.local.yml        # Override para local
 │   ├── docker-compose.test.yml         # Override para test
 │   ├── docker-compose.dev.yml          # Override para dev
+│   ├── docker-compose.release.yml      # Override para release/staging
 │   ├── docker-compose.prod.yml         # Override para prod
 │   ├── frontend/
 │   │   └── Dockerfile                  # Astro v5 container

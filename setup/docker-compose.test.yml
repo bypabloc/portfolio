@@ -1,7 +1,6 @@
 # Test Environment Override
 # Portfolio Serverless System - Testing Setup Configuration
 
-version: '3.8'
 
 services:
   # Database - Test environment

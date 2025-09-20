@@ -1,7 +1,6 @@
 # Development Environment Override
 # Portfolio Serverless System - Development Branch Setup Configuration
 
-version: '3.8'
 
 services:
   # Database - Development environment

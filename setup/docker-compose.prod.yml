@@ -1,7 +1,6 @@
 # Production Environment Override
 # Portfolio Serverless System - Production Setup Configuration
 
-version: '3.8'
 
 services:
   # Database - Production environment

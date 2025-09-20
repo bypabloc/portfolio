@@ -1,7 +1,6 @@
 # Release Environment Override
 # Portfolio Serverless System - Release/Staging Setup Configuration
 
-version: '3.8'
 
 services:
   # Database - Release environment

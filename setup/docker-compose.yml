@@ -2,7 +2,7 @@
 # Astro v5 + AWS Lambda + FastAPI + Neon PostgreSQL Architecture
 # Runtime environment for local development
 
-version: '3.8'
+name: portfolio
 
 networks:
   portfolio-network:

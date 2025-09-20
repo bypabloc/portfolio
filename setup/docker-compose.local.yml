@@ -1,7 +1,6 @@
 # Local Development Environment Override
 # Portfolio Serverless System - Local Setup Configuration
 
-version: '3.8'
 
 services:
   # Database - Local development optimizations
