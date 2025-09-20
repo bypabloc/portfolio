@@ -1,4 +1,4 @@
-# structure_folder_n_files
+# genstruct
 
 Muestra la estructura de archivos y carpetas del proyecto, con soporte avanzado para:
 - Archivos con cambios pendientes vs rama base (uncommitted)  
@@ -143,147 +143,147 @@ La flag `--git-mode` permite filtrar archivos por su estado específico en git:
 
 ### Estructura básica
 ```bash
-python scripts/run.py structure_folder_n_files
+python scripts/run.py genstruct
 ```
 
 ### Solo carpetas raíz
 ```bash
-python scripts/run.py structure_folder_n_files --only-folders-root
+python scripts/run.py genstruct --only-folders-root
 ```
 
 ### Archivos no mergeados (unmerged)
 ```bash
 # Mostrar solo archivos no mergeados a rama base
-python scripts/run.py structure_folder_n_files --git-mode="unmerged"
+python scripts/run.py genstruct --git-mode="unmerged"
 
 # Incluir archivos eliminados junto con los no mergeados
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted
+python scripts/run.py genstruct --git-mode="unmerged" --include-deleted
 
 # Combinar con solo lista para procesamiento
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-list
+python scripts/run.py genstruct --git-mode="unmerged" --only-list
 
 # Excluir archivos temporales de los unmerged
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --excludes-extension="tmp|log|pyc"
+python scripts/run.py genstruct --git-mode="unmerged" --excludes-extension="tmp|log|pyc"
 
 # Solo archivos Python no mergeados
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-extension="py"
+python scripts/run.py genstruct --git-mode="unmerged" --only-extension="py"
 
 # Solo documentación no mergeada
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-extension="md|rst"
+python scripts/run.py genstruct --git-mode="unmerged" --only-extension="md|rst"
 
 # Obtener archivos eliminados con contenido desde git history
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --only-list
+python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --only-list
 
 # Excluir archivos vacíos para identificar solo archivos importantes
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --exclude-empty
+python scripts/run.py genstruct --git-mode="unmerged" --exclude-empty
 
 # Combinaciones útiles para análisis
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --exclude-empty
+python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --exclude-empty
 ```
 
 ### Modos de Git específicos (nuevo)
 ```bash
 # Ver solo archivos en staging area
-python scripts/run.py structure_folder_n_files --git-mode="staged"
+python scripts/run.py genstruct --git-mode="staged"
 
 # Ver archivos con cambios no staged
-python scripts/run.py structure_folder_n_files --git-mode="unstaged"
+python scripts/run.py genstruct --git-mode="unstaged"
 
 # Ver archivos no rastreados por git
-python scripts/run.py structure_folder_n_files --git-mode="untracked"
+python scripts/run.py genstruct --git-mode="untracked"
 
 # Ver archivos en stash
-python scripts/run.py structure_folder_n_files --git-mode="stash"
+python scripts/run.py genstruct --git-mode="stash"
 
 # Ver archivos con cualquier cambio (staged + unstaged + untracked)
-python scripts/run.py structure_folder_n_files --git-mode="changed"
+python scripts/run.py genstruct --git-mode="changed"
 
 # Ver todos los modos separados por categoría
-python scripts/run.py structure_folder_n_files --git-mode="all"
+python scripts/run.py genstruct --git-mode="all"
 
 # Combinar con otras flags
-python scripts/run.py structure_folder_n_files --git-mode="staged" --exclude-empty
-python scripts/run.py structure_folder_n_files --git-mode="all" --only-list
+python scripts/run.py genstruct --git-mode="staged" --exclude-empty
+python scripts/run.py genstruct --git-mode="all" --only-list
 ```
 
 ### Lista para procesamiento en scripts
 ```bash
-python scripts/run.py structure_folder_n_files --only-list --only-folders-root
+python scripts/run.py genstruct --only-list --only-folders-root
 ```
 
 ### Filtrar por tipos de archivos específicos
 ```bash
 # Excluir tipos de archivos específicos
-python scripts/run.py structure_folder_n_files --excludes-extension="json|csv|sql"
-python scripts/run.py structure_folder_n_files --excludes-extension="pyc|log|tmp"
+python scripts/run.py genstruct --excludes-extension="json|csv|sql"
+python scripts/run.py genstruct --excludes-extension="pyc|log|tmp"
 
 # Incluir SOLO tipos de archivos específicos  
-python scripts/run.py structure_folder_n_files --only-extension="py|js|ts"
-python scripts/run.py structure_folder_n_files --only-extension="md|txt|yml"
+python scripts/run.py genstruct --only-extension="py|js|ts"
+python scripts/run.py genstruct --only-extension="md|txt|yml"
 
 # Combinar con git-mode
-python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-extension="py|md"
+python scripts/run.py genstruct --git-mode="unmerged" --only-extension="py|md"
 ```
 
 ### Incluir archivos ignorados
 ```bash
-python scripts/run.py structure_folder_n_files --include-ignored --only-folders-root
+python scripts/run.py genstruct --include-ignored --only-folders-root
 ```
 
 ### Combinando flags
 ```bash
-python scripts/run.py structure_folder_n_files --only-list --excludes-extension="pyc|log"
+python scripts/run.py genstruct --only-list --excludes-extension="pyc|log"
 ```
 
 ## Casos de uso comunes
 
 ### Para desarrollo
-- **Ver estructura git limpia**: `python scripts/run.py structure_folder_n_files`
-- **Solo carpetas principales**: `python scripts/run.py structure_folder_n_files --only-folders-root`
-- **Excluir archivos temporales**: `python scripts/run.py structure_folder_n_files --excludes-extension="tmp|log|cache"`
-- **Solo archivos Python**: `python scripts/run.py structure_folder_n_files --only-extension="py"`
-- **Solo documentación**: `python scripts/run.py structure_folder_n_files --only-extension="md|rst|txt"`
-- **Archivos no mergeados**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged"`
-- **Incluir archivos eliminados**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted`
-- **Solo archivos importantes (no vacíos)**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --exclude-empty`
-- **Revisar cambios antes de commit**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-list`
-- **Analizar eliminaciones**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --only-list`
-- **Análisis completo sin archivos vacíos**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --exclude-empty`
-- **Solo archivos en staging area**: `python scripts/run.py structure_folder_n_files --git-mode="staged"`
-- **Archivos con cambios locales**: `python scripts/run.py structure_folder_n_files --git-mode="unstaged"`
-- **Vista completa por categorías**: `python scripts/run.py structure_folder_n_files --git-mode="all"`
+- **Ver estructura git limpia**: `python scripts/run.py genstruct`
+- **Solo carpetas principales**: `python scripts/run.py genstruct --only-folders-root`
+- **Excluir archivos temporales**: `python scripts/run.py genstruct --excludes-extension="tmp|log|cache"`
+- **Solo archivos Python**: `python scripts/run.py genstruct --only-extension="py"`
+- **Solo documentación**: `python scripts/run.py genstruct --only-extension="md|rst|txt"`
+- **Archivos no mergeados**: `python scripts/run.py genstruct --git-mode="unmerged"`
+- **Incluir archivos eliminados**: `python scripts/run.py genstruct --git-mode="unmerged" --include-deleted`
+- **Solo archivos importantes (no vacíos)**: `python scripts/run.py genstruct --git-mode="unmerged" --exclude-empty`
+- **Revisar cambios antes de commit**: `python scripts/run.py genstruct --git-mode="unmerged" --only-list`
+- **Analizar eliminaciones**: `python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --only-list`
+- **Análisis completo sin archivos vacíos**: `python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --exclude-empty`
+- **Solo archivos en staging area**: `python scripts/run.py genstruct --git-mode="staged"`
+- **Archivos con cambios locales**: `python scripts/run.py genstruct --git-mode="unstaged"`
+- **Vista completa por categorías**: `python scripts/run.py genstruct --git-mode="all"`
 
 ### Para scripts y automatización
-- **Lista procesable**: `python scripts/run.py structure_folder_n_files --only-list --only-folders-root`
-- **Archivos no mergeados para CI/CD**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-list`
-- **Incluir eliminados en CI/CD**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --only-list`
-- **Solo archivos importantes para CI/CD**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged" --exclude-empty --only-list`
-- **Solo archivos staged para CI/CD**: `python scripts/run.py structure_folder_n_files --git-mode="staged" --only-list`
-- **Archivos por modo específico**: `python scripts/run.py structure_folder_n_files --git-mode="unstaged" --only-list`
+- **Lista procesable**: `python scripts/run.py genstruct --only-list --only-folders-root`
+- **Archivos no mergeados para CI/CD**: `python scripts/run.py genstruct --git-mode="unmerged" --only-list`
+- **Incluir eliminados en CI/CD**: `python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --only-list`
+- **Solo archivos importantes para CI/CD**: `python scripts/run.py genstruct --git-mode="unmerged" --exclude-empty --only-list`
+- **Solo archivos staged para CI/CD**: `python scripts/run.py genstruct --git-mode="staged" --only-list`
+- **Archivos por modo específico**: `python scripts/run.py genstruct --git-mode="unstaged" --only-list`
 - **En scripts bash**:
   ```bash
   # Procesar carpetas
-  FOLDERS=$(python scripts/run.py structure_folder_n_files --only-list --only-folders-root)
+  FOLDERS=$(python scripts/run.py genstruct --only-list --only-folders-root)
   for folder in $(echo "$FOLDERS" | tr ';' ' '); do
       echo "Procesando carpeta: $folder"
   done
   
   # Procesar archivos no mergeados
-  UNMERGED_FILES=$(python scripts/run.py structure_folder_n_files --git-mode="unmerged" --only-list)
+  UNMERGED_FILES=$(python scripts/run.py genstruct --git-mode="unmerged" --only-list)
   for file in $(echo "$UNMERGED_FILES" | tr ';' ' '); do
       echo "Archivo no mergeado: $file"
       # Ejecutar lint, tests, etc. solo en archivos no mergeados
   done
   
   # Procesar archivos eliminados junto con no mergeados
-  ALL_CHANGES=$(python scripts/run.py structure_folder_n_files --git-mode="unmerged" --include-deleted --only-list)
+  ALL_CHANGES=$(python scripts/run.py genstruct --git-mode="unmerged" --include-deleted --only-list)
   for file in $(echo "$ALL_CHANGES" | tr ';' ' '); do
       echo "Cambio detectado: $file"
       # Procesar tanto no mergeados como eliminados
   done
   
   # Procesar solo archivos importantes (no vacíos)
-  IMPORTANT_FILES=$(python scripts/run.py structure_folder_n_files --git-mode="unmerged" --exclude-empty --only-list)
+  IMPORTANT_FILES=$(python scripts/run.py genstruct --git-mode="unmerged" --exclude-empty --only-list)
   for file in $(echo "$IMPORTANT_FILES" | tr ';' ' '); do
       echo "Archivo importante no mergeado: $file"
       # Ejecutar análisis solo en archivos con contenido relevante
@@ -291,9 +291,9 @@ python scripts/run.py structure_folder_n_files --only-list --excludes-extension=
   ```
 
 ### Para análisis
-- **Ver todo incluyendo ignorados**: `python scripts/run.py structure_folder_n_files --include-ignored` (no recomendado para uso regular)
-- **Analizar archivos no mergeados**: `python scripts/run.py structure_folder_n_files --git-mode="unmerged"` (incluye fechas)
-- **Filtrar solo archivos importantes**: `python scripts/run.py structure_folder_n_files --exclude-empty` (excluye __init__.py vacíos, etc.)
+- **Ver todo incluyendo ignorados**: `python scripts/run.py genstruct --include-ignored` (no recomendado para uso regular)
+- **Analizar archivos no mergeados**: `python scripts/run.py genstruct --git-mode="unmerged"` (incluye fechas)
+- **Filtrar solo archivos importantes**: `python scripts/run.py genstruct --exclude-empty` (excluye __init__.py vacíos, etc.)
 
 ## Formato de salida
 

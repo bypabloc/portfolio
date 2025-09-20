@@ -345,3 +345,5 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla,astro,node
 
 .vscode/*.log
+.env*
+!.env.example

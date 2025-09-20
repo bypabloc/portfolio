@@ -1,0 +1,108 @@
+# Test Environment Override
+# Portfolio Serverless System - Testing Setup Configuration
+
+version: '3.8'
+
+services:
+  # Database - Test environment
+  portfolio-db:
+    environment:
+      - POSTGRES_DB=portfolio_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=portfolio_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    command: ["postgres", "-c", "log_statement=none", "-c", "log_duration=off"]
+    tmpfs:
+      - /var/lib/postgresql/data:noexec,nosuid,size=512m
+
+  # Neon Proxy - Test configuration
+  neon-proxy:
+    environment:
+      - NODE_ENV=test
+      - LOG_LEVEL=warn
+
+  # Personal Info Service - Test environment
+  personal-info-service:
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - SERVICE_NAME=personal-info
+      - LOG_LEVEL=warn
+      - HOT_RELOAD=false
+      - DEBUG_MODE=false
+      - TEST_MODE=true
+    volumes:
+      - ./server/personal-info/tests:/app/tests:ro
+
+  # Experience Service - Test environment
+  experience-service:
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - SERVICE_NAME=experience
+      - LOG_LEVEL=warn
+      - HOT_RELOAD=false
+      - DEBUG_MODE=false
+      - TEST_MODE=true
+    volumes:
+      - ./server/experience/tests:/app/tests:ro
+
+  # Projects Service - Test environment
+  projects-service:
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - SERVICE_NAME=projects
+      - LOG_LEVEL=warn
+      - HOT_RELOAD=false
+      - DEBUG_MODE=false
+      - TEST_MODE=true
+    volumes:
+      - ./server/projects/tests:/app/tests:ro
+
+  # Skills Service - Test environment
+  skills-service:
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - SERVICE_NAME=skills
+      - LOG_LEVEL=warn
+      - HOT_RELOAD=false
+      - DEBUG_MODE=false
+      - TEST_MODE=true
+    volumes:
+      - ./server/skills/tests:/app/tests:ro
+
+  # API Gateway - Test environment
+  api-gateway:
+    environment:
+      - NGINX_ENV=test
+      - LOG_LEVEL=warn
+
+  # Frontend App - Test environment
+  portfolio-frontend:
+    environment:
+      - NODE_ENV=test
+      - ASTRO_PORT=4321
+      - API_BASE_URL=http://api-gateway
+      - HOT_RELOAD=false
+      - DEBUG_MODE=false
+      - LOG_LEVEL=warn
+      - TEST_MODE=true
+    volumes:
+      - ./app/tests:/app/tests:ro
+
+  # Test utilities
+  test-runner:
+    image: alpine:latest
+    container_name: test-runner
+    profiles:
+      - test
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:ro
+    command: ["sleep", "infinity"]

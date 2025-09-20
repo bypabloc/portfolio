@@ -1,8 +1,8 @@
-# docker_env
+# setup
 
-**Script de gestión de entornos Docker para el Portfolio Serverless System**
+**Script de gestión de entornos de desarrollo para el Portfolio Serverless System**
 
-Automatiza la gestión de contenedores Docker para el desarrollo local, testing, desarrollo y producción del sistema de portfolio serverless basado en Astro v5 + AWS Lambda + FastAPI + Neon PostgreSQL.
+Automatiza la gestión de contenedores para el desarrollo local, testing, desarrollo y producción del sistema de portfolio serverless basado en Astro v5 + AWS Lambda + FastAPI + Neon PostgreSQL.
 
 🏗️ **Arquitectura**: Replica la arquitectura serverless en contenedores para desarrollo local con separación completa frontend/backend.
 
@@ -43,34 +43,44 @@ Automatiza la gestión de contenedores Docker para el desarrollo local, testing,
 ## Entornos disponibles
 
 ### `local` - Desarrollo activo
-- Hot reload habilitado
-- Logs detallados
-- Debug mode activado
-- Base de datos en memoria (rápida)
-- Variables de desarrollo
+- Hot reload habilitado para todos los servicios
+- Logs detallados (debug level)
+- Debug mode activado con puertos específicos
+- Volúmenes de código fuente montados
+- Variables de desarrollo (.env.local)
 
 ### `test` - Testing automatizado
 - Contenedores optimizados para testing
-- Base de datos de test aislada
+- Base de datos en memoria (tmpfs)
 - Sin hot reload (estabilidad)
-- Variables de test
+- Test runner incluido
+- Variables de test (.env.test)
 
 ### `dev` - Desarrollo estable
 - Replica entorno de desarrollo remoto
 - Base de datos persistente
-- Logging estructurado
-- Variables de dev branch
+- Profiling habilitado
+- Monitoring de desarrollo
+- Variables de dev branch (.env.dev)
+
+### `release` - Pre-producción/Staging
+- Configuración similar a producción
+- Límites de recursos aplicados
+- Monitoring habilitado
+- Testing de release
+- Variables de staging (.env.release)
 
 ### `prod` - Simulación de producción
-- Configuración de producción
-- Base de datos con datos de prueba realistas
-- Monitoring habilitado
-- Variables de producción (sin secretos)
+- Configuración de producción completa
+- Límites estrictos de recursos
+- Monitoring y métricas completas
+- Reinicio automático (restart: always)
+- Variables de producción (.env.prod)
 
 ## Flags disponibles
 
 **Gestión de entornos:**
-- `--env="local|test|dev|prod"` - Entorno a levantar (default: local)
+- `--env="local|test|dev|release|prod"` - Entorno a levantar (default: local)
 - `--services="frontend|backend|db|gateway|all"` - Servicios específicos (default: all)
 
 **Operaciones:**
@@ -91,88 +101,91 @@ Automatiza la gestión de contenedores Docker para el desarrollo local, testing,
 ### Desarrollo local básico
 ```bash
 # Levantar entorno completo local
-python scripts/run.py docker_env --env="local"
+python scripts/run.py setup --env="local"
 
 # Con información detallada
-python scripts/run.py docker_env --env="local" --verbose
+python scripts/run.py setup --env="local" --verbose
 
 # Seguir logs después de levantar
-python scripts/run.py docker_env --env="local" --follow-logs
+python scripts/run.py setup --env="local" --follow-logs
 ```
 
 ### Gestión de servicios específicos
 ```bash
 # Solo frontend (Astro)
-python scripts/run.py docker_env --env="local" --services="frontend"
+python scripts/run.py setup --env="local" --services="frontend"
 
 # Solo backend microservices
-python scripts/run.py docker_env --env="local" --services="backend"
+python scripts/run.py setup --env="local" --services="backend"
 
 # Solo base de datos
-python scripts/run.py docker_env --env="local" --services="db"
+python scripts/run.py setup --env="local" --services="db"
 
 # Frontend + API Gateway
-python scripts/run.py docker_env --env="local" --services="frontend,gateway"
+python scripts/run.py setup --env="local" --services="frontend,gateway"
 ```
 
 ### Microservices backend específicos
 ```bash
 # Solo servicio personal-info
-python scripts/run.py docker_env --env="local" --services="backend" --backend-services="personal-info"
+python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info"
 
 # Personal-info + Experience
-python scripts/run.py docker_env --env="local" --services="backend" --backend-services="personal-info,experience"
+python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info,experience"
 
 # Todos los microservices backend
-python scripts/run.py docker_env --env="local" --services="backend" --backend-services="all"
+python scripts/run.py setup --env="local" --services="backend" --backend-services="all"
 ```
 
 ### Diferentes entornos
 ```bash
 # Entorno de testing
-python scripts/run.py docker_env --env="test" --verbose
+python scripts/run.py setup --env="test" --verbose
 
 # Entorno de desarrollo
-python scripts/run.py docker_env --env="dev"
+python scripts/run.py setup --env="dev"
+
+# Entorno de release/staging
+python scripts/run.py setup --env="release" --verbose
 
 # Simulación de producción
-python scripts/run.py docker_env --env="prod" --verbose
+python scripts/run.py setup --env="prod" --verbose
 ```
 
 ### Operaciones de gestión
 ```bash
 # Ver estado de servicios
-python scripts/run.py docker_env --action="status" --verbose
+python scripts/run.py setup --action="status" --verbose
 
 # Ver logs de servicios
-python scripts/run.py docker_env --action="logs" --follow-logs
+python scripts/run.py setup --action="logs" --follow-logs
 
 # Reiniciar servicios
-python scripts/run.py docker_env --action="restart" --env="local"
+python scripts/run.py setup --action="restart" --env="local"
 
 # Bajar servicios
-python scripts/run.py docker_env --action="down" --env="local"
+python scripts/run.py setup --action="down" --env="local"
 
 # Limpiar recursos Docker
-python scripts/run.py docker_env --action="clean" --verbose
+python scripts/run.py setup --action="clean" --verbose
 ```
 
 ### Con rebuild forzado
 ```bash
 # Rebuild completo del entorno
-python scripts/run.py docker_env --env="local" --build --verbose
+python scripts/run.py setup --env="local" --build --verbose
 
 # Rebuild solo del frontend
-python scripts/run.py docker_env --env="local" --services="frontend" --build
+python scripts/run.py setup --env="local" --services="frontend" --build
 ```
 
 ### Para CI/CD y testing
 ```bash
 # Levantar entorno test sin detach (para CI)
-python scripts/run.py docker_env --env="test" --detach=false
+python scripts/run.py setup --env="test" --detach=false
 
 # Entorno test con rebuild
-python scripts/run.py docker_env --env="test" --build --verbose
+python scripts/run.py setup --env="test" --build --verbose
 ```
 
 ## Estructura de archivos Docker
@@ -181,7 +194,7 @@ El script espera esta estructura en el proyecto:
 
 ```
 portfolio/
-├── docker/
+├── setup/
 │   ├── docker-compose.yml              # Configuración base
 │   ├── docker-compose.local.yml        # Override para local
 │   ├── docker-compose.test.yml         # Override para test
@@ -207,6 +220,7 @@ portfolio/
 └── .env.local                         # Variables locales
 └── .env.test                          # Variables de test
 └── .env.dev                           # Variables de dev
+└── .env.release                       # Variables de release/staging
 └── .env.prod                          # Variables de prod
 ```
 
@@ -314,22 +328,22 @@ docker-compose logs -f --timestamps
 ### Puertos en uso:
 ```bash
 # Ver qué está usando los puertos
-python scripts/run.py docker_env --action="status" --verbose
+python scripts/run.py setup --action="status" --verbose
 ```
 
 ### Rebuild por problemas de cache:
 ```bash
 # Rebuild forzado con limpieza
-python scripts/run.py docker_env --action="clean"
-python scripts/run.py docker_env --env="local" --build
+python scripts/run.py setup --action="clean"
+python scripts/run.py setup --env="local" --build
 ```
 
 ### Reset completo:
 ```bash
 # Limpiar todo y empezar de cero
-python scripts/run.py docker_env --action="clean" --verbose
+python scripts/run.py setup --action="clean" --verbose
 docker system prune -f
-python scripts/run.py docker_env --env="local" --build --verbose
+python scripts/run.py setup --env="local" --build --verbose
 ```
 
 ## Exit codes

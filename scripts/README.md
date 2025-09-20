@@ -533,7 +533,7 @@ Para contribuir al sistema de scripts:
 
 ### v1.0.0 (2025-01-04)
 - Sistema inicial de scripts modulares
-- Implementación de `structure_folder_n_files`
+- Implementación de `genstruct`
 - Utilidades base para manejo de flags
 - Documentación completa
 - Validación robusta de errores

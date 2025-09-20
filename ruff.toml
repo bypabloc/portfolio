@@ -11,7 +11,7 @@
 
 # CONFIGURACIÓN BÁSICA
 line-length = 88  # Aumentado para evitar saltos de línea prematuros en imports
-target-version = "py314"
+target-version = "py313"
 indent-width = 4
 
 # AUTO-FIX AUTOMÁTICO

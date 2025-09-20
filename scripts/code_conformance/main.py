@@ -555,7 +555,7 @@ def _run_ruff_console_analysis(flags: Dict[str, Any], project_path: Path) -> Non
         print(f'📁 Analizando {len(python_files)} archivos individualmente con Ruff')
         print('📄 Configuración: ruff.toml (800+ reglas activas)')
 
-    # Mostrar estructura de archivos usando structure_folder_n_files (solo para modos git)
+    # Mostrar estructura de archivos usando genstruct (solo para modos git)
     if flags.get('mode'):  # Solo mostrar para modos git, no para archivos específicos
         _show_structure_info(flags, project_path)
 
@@ -581,7 +581,7 @@ def _run_ruff_console_analysis(flags: Dict[str, Any], project_path: Path) -> Non
 
 def _show_structure_info(flags: Dict[str, Any], project_path: Path) -> None:
     """
-    Muestra información de estructura de archivos usando structure_folder_n_files.
+    Muestra información de estructura de archivos usando genstruct.
 
     Ejecuta el script de estructura de archivos para mostrar los archivos
     que serán analizados según el modo git especificado.
@@ -601,7 +601,7 @@ def _show_structure_info(flags: Dict[str, Any], project_path: Path) -> None:
         - 2025-01-14
     """
     try:
-        # Ejecutar structure_folder_n_files para mostrar archivos no mergeados
+        # Ejecutar genstruct para mostrar archivos no mergeados
         mode = flags.get('mode', 'unmerged')
 
         git_mode_map = {
@@ -614,7 +614,7 @@ def _show_structure_info(flags: Dict[str, Any], project_path: Path) -> None:
         git_mode = git_mode_map.get(mode, 'unmerged')
 
         cmd = [
-            sys.executable, 'scripts/run.py', 'structure_folder_n_files',
+            sys.executable, 'scripts/run.py', 'genstruct',
             f'--git-mode={git_mode}', f'--only-extension={RUFF_PYTHON_EXTENSIONS["structure_arg"]}',
         ]
 
@@ -653,7 +653,7 @@ def _show_structure_info(flags: Dict[str, Any], project_path: Path) -> None:
                 print("No hay archivos Python en el modo especificado")
         else:
             if flags.get('verbose'):
-                print(f"⚠️  Error ejecutando structure_folder_n_files: {result.stderr}")
+                print(f"⚠️  Error ejecutando genstruct: {result.stderr}")
 
         if flags.get('verbose'):
             print('=' * 50)

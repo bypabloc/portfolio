@@ -1,0 +1,110 @@
+# Development Environment Override
+# Portfolio Serverless System - Development Branch Setup Configuration
+
+version: '3.8'
+
+services:
+  # Database - Development environment
+  portfolio-db:
+    environment:
+      - POSTGRES_DB=portfolio_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=portfolio_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    command: ["postgres", "-c", "log_statement=mod", "-c", "log_duration=on"]
+
+  # Neon Proxy - Development configuration
+  neon-proxy:
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=info
+
+  # Personal Info Service - Development environment
+  personal-info-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_dev
+      - SERVICE_NAME=personal-info
+      - LOG_LEVEL=info
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - PROFILING_ENABLED=true
+    volumes:
+      - ./server/personal-info/src:/app/src:ro
+
+  # Experience Service - Development environment
+  experience-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_dev
+      - SERVICE_NAME=experience
+      - LOG_LEVEL=info
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - PROFILING_ENABLED=true
+    volumes:
+      - ./server/experience/src:/app/src:ro
+
+  # Projects Service - Development environment
+  projects-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_dev
+      - SERVICE_NAME=projects
+      - LOG_LEVEL=info
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - PROFILING_ENABLED=true
+    volumes:
+      - ./server/projects/src:/app/src:ro
+
+  # Skills Service - Development environment
+  skills-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_dev
+      - SERVICE_NAME=skills
+      - LOG_LEVEL=info
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - PROFILING_ENABLED=true
+    volumes:
+      - ./server/skills/src:/app/src:ro
+
+  # API Gateway - Development environment
+  api-gateway:
+    environment:
+      - NGINX_ENV=development
+      - LOG_LEVEL=info
+    volumes:
+      - ./proxy/logs:/var/log/nginx
+
+  # Frontend App - Development environment
+  portfolio-frontend:
+    environment:
+      - NODE_ENV=development
+      - ASTRO_PORT=4321
+      - API_BASE_URL=http://api-gateway
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - LOG_LEVEL=info
+      - PROFILING_ENABLED=true
+    volumes:
+      - ./app/src:/app/src:ro
+      - ./app/public:/app/public:ro
+
+  # Development monitoring
+  dev-monitor:
+    image: alpine:latest
+    container_name: dev-monitor
+    profiles:
+      - dev
+      - monitoring
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:ro
+    command: ["sleep", "infinity"]

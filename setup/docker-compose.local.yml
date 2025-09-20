@@ -1,0 +1,122 @@
+# Local Development Environment Override
+# Portfolio Serverless System - Local Setup Configuration
+
+version: '3.8'
+
+services:
+  # Database - Local development optimizations
+  portfolio-db:
+    environment:
+      - POSTGRES_DB=portfolio_local
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=portfolio_password
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_duration=on"]
+
+  # Neon Proxy - Local configuration
+  neon-proxy:
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+
+  # Personal Info Service - Local development
+  personal-info-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - SERVICE_NAME=personal-info
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+    volumes:
+      - ./server/personal-info/src:/app/src
+      - ./server/personal-info/tests:/app/tests
+    ports:
+      - "8001:8080"
+      - "9001:9001"  # Debug port
+
+  # Experience Service - Local development
+  experience-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - SERVICE_NAME=experience
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+    volumes:
+      - ./server/experience/src:/app/src
+      - ./server/experience/tests:/app/tests
+    ports:
+      - "8002:8080"
+      - "9002:9001"  # Debug port
+
+  # Projects Service - Local development
+  projects-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - SERVICE_NAME=projects
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+    volumes:
+      - ./server/projects/src:/app/src
+      - ./server/projects/tests:/app/tests
+    ports:
+      - "8003:8080"
+      - "9003:9001"  # Debug port
+
+  # Skills Service - Local development
+  skills-service:
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - SERVICE_NAME=skills
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+    volumes:
+      - ./server/skills/src:/app/src
+      - ./server/skills/tests:/app/tests
+    ports:
+      - "8004:8080"
+      - "9004:9001"  # Debug port
+
+  # API Gateway - Local development
+  api-gateway:
+    environment:
+      - NGINX_ENV=development
+      - LOG_LEVEL=debug
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/conf.d:/etc/nginx/conf.d:ro
+      - ./proxy/logs:/var/log/nginx
+
+  # Frontend App - Local development
+  portfolio-frontend:
+    environment:
+      - NODE_ENV=development
+      - ASTRO_PORT=4321
+      - API_BASE_URL=http://api-gateway
+      - HOT_RELOAD=true
+      - DEBUG_MODE=true
+      - LOG_LEVEL=debug
+    volumes:
+      - ./app/src:/app/src
+      - ./app/public:/app/public
+      - ./app/tests:/app/tests
+      - /app/node_modules  # Anonymous volume
+    ports:
+      - "4321:4321"
+      - "24678:24678"  # Vite HMR port
+
+  # Development Tools
+  dev-tools:
+    profiles:
+      - local
+      - tools

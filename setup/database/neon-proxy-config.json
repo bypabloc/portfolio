@@ -1,0 +1,29 @@
+{
+  "database": {
+    "host": "portfolio-db",
+    "port": 5432,
+    "database": "portfolio_local",
+    "user": "postgres",
+    "password": "portfolio_password"
+  },
+  "proxy": {
+    "port": 5433,
+    "host": "0.0.0.0"
+  },
+  "logging": {
+    "level": "info",
+    "enableRequestLogging": true
+  },
+  "cors": {
+    "enabled": true,
+    "origins": ["*"]
+  },
+  "websocket": {
+    "enabled": true,
+    "pingInterval": 30000
+  },
+  "http": {
+    "enabled": true,
+    "timeout": 10000
+  }
+}

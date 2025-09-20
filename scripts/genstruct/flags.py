@@ -33,7 +33,7 @@ def get_valid_git_modes() -> List[str]:
 
 def flag(flags_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Procesa y valida las flags para el script structure_folder_n_files.
+    Procesa y valida las flags para el script genstruct.
 
     Valida y procesa las configuraciones para la visualización de estructura
     de archivos y carpetas del proyecto, incluyendo filtros y modos git.
