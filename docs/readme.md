@@ -73,7 +73,7 @@ Este proyecto consiste en un **portfolio/CV moderno y serverless** implementado 
 - ✅ Integración completa con APIs Lambda via HTTP
 - ✅ Optimizaciones de performance (imágenes, bundling, CSS)
 - ✅ Testing con Vitest + Container API + Playwright
-- ✅ Deployment a Vercel/Netlify con configuración serverless
+- ✅ Deployment a AWS CloudFront + S3 con configuración serverless
 
 **Arquitectura**: SSG (Static Site Generation) con capacidades híbridas via Server Islands, consumiendo APIs serverless.
 
@@ -127,7 +127,7 @@ Este proyecto consiste en un **portfolio/CV moderno y serverless** implementado 
 - AWS Lambda + API Gateway + SAM CLI
 - Docker Compose para desarrollo local
 - GitHub Actions para CI/CD
-- Vercel/Netlify para frontend deployment
+- AWS CloudFront + S3 para frontend deployment
 ```
 
 ### Testing

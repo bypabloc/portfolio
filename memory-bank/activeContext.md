@@ -96,10 +96,8 @@
    - **Impact**: Development workflow and testing strategy
 
 3. **Frontend Deployment Platform**
-   - Option A: Vercel (recommended for Astro)
-   - Option B: Netlify (alternative)
-   - Option C: AWS CloudFront + S3 (for unified AWS stack)
-   - **Decision needed by**: Before frontend development
+   - **AWS CloudFront + S3** (unified AWS stack)
+   - **Decision finalized**: AWS deployment only
    - **Impact**: CI/CD pipeline and deployment automation
 
 ### No Current Blockers

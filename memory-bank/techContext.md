@@ -529,9 +529,8 @@ jobs:
 ### Deployment Targets
 ```yaml
 Frontend Deployment:
-  - Primary: Vercel (recommended for Astro)
-  - Alternative: Netlify
-  - Features: Auto-deployment from Git, edge functions
+  - Platform: AWS CloudFront + S3 (unified AWS stack)
+  - Features: Global CDN, auto-deployment from Git, serverless distribution, unified AWS infrastructure
 
 Backend Deployment:
   - Primary: AWS Lambda via SAM CLI

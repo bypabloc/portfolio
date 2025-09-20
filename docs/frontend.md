@@ -1762,30 +1762,108 @@ const typedCV = cv as CVData;
 }
 ```
 
-### Deployment to Vercel/Netlify
+### Deployment to AWS CloudFront + S3
 
-**vercel.json:**
-```json
-{
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "astro"
-}
+**AWS SAM Template (frontend-template.yaml):**
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-frontend"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: 404.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub "${S3Bucket}/*"
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt S3Bucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled
+        CacheBehaviors:
+          - PathPattern: "*.js"
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+          - PathPattern: "*.css"
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+        Enabled: true
+        DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /404.html
+
+Outputs:
+  S3BucketName:
+    Description: "S3 Bucket for Frontend"
+    Value: !Ref S3Bucket
+  CloudFrontURL:
+    Description: "CloudFront Distribution URL"
+    Value: !GetAtt CloudFrontDistribution.DomainName
 ```
 
-**netlify.toml:**
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
+**Deploy Script (deploy-frontend.sh):**
+```bash
+#!/bin/bash
+set -e
 
-[build.environment]
-  NODE_VERSION = "20"
+# Build the Astro project
+npm run build
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
+# Deploy CloudFront + S3 stack
+sam build -t frontend-template.yaml
+sam deploy --guided --stack-name portfolio-frontend
+
+# Get S3 bucket name from stack outputs
+S3_BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name portfolio-frontend \
+  --query 'Stacks[0].Outputs[?OutputKey==`S3BucketName`].OutputValue' \
+  --output text)
+
+# Sync build files to S3
+aws s3 sync dist/ s3://$S3_BUCKET --delete
+
+# Invalidate CloudFront cache
+CLOUDFRONT_ID=$(aws cloudformation describe-stacks \
+  --stack-name portfolio-frontend \
+  --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' \
+  --output text)
+
+aws cloudfront create-invalidation \
+  --distribution-id $CLOUDFRONT_ID \
+  --paths "/*"
+
+echo "Frontend deployed successfully!"
 ```
 
 ---
