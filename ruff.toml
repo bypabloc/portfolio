@@ -1,0 +1,252 @@
+# ============================================================================
+# RUFF CONFIGURATION - Easy Pay Project
+# ============================================================================
+# Configuración completa para cubrir todos los estándares del README y
+# mejores prácticas para Python 3.8 en 2025
+#
+# Autor: Pablo Contreras (Bypabloc)
+# Fecha: 2025-01-14
+# Proyecto: Easy Pay (Fintech Django + Vue.js)
+# ============================================================================
+
+# CONFIGURACIÓN BÁSICA
+line-length = 88  # Aumentado para evitar saltos de línea prematuros en imports
+target-version = "py314"
+indent-width = 4
+
+# AUTO-FIX AUTOMÁTICO
+fix = true
+show-fixes = true
+
+# DETECCIÓN AUTOMÁTICA DE MÓDULOS
+src = ["."]
+namespace-packages = ["easy_pay"]
+
+# ARCHIVOS A INCLUIR/EXCLUIR
+extend-include = ["*.pyi"]
+respect-gitignore = true
+exclude = [
+    "migrations",
+    "static/dist",
+]
+
+# ============================================================================
+# REGLAS DE LINTING
+# ============================================================================
+
+[lint]
+# SELECCIÓN DE REGLAS - Cubriendo README + Python 3.8 best practices
+select = [
+    # === ESTÁNDARES DEL README ===
+    "E",      # pycodestyle errors: indentation, line length, whitespace
+    "W",      # pycodestyle warnings: deprecated features, style issues
+
+    # IMPORTS Y OTROS
+    "F",      # Pyflakes: unused imports, undefined names, syntax errors
+    "I",      # isort: import sorting and organization
+    "UP",     # pyupgrade: upgrade syntax for newer Python versions
+
+    # === PYTHON 3.8 & DESARROLLO MODERNO ===
+    "B",      # flake8-bugbear: likely bugs and design problems
+    "C4",     # flake8-comprehensions: optimize list/dict/set comprehensions
+    "SIM",    # flake8-simplify: simplify complex expressions
+    "PIE",    # flake8-pie: miscellaneous linting rules
+    "RET",    # flake8-return: improve function return statements
+    "N",      # pep8-naming: enforce PEP 8 naming conventions
+    
+    # === TYPE ANNOTATIONS (MANDATORY) ===
+    "ANN",    # flake8-annotations: enforce type annotations
+              # ARGUMENTOS:
+              # ANN001: Missing type annotation for function argument
+              # ANN002: Missing type annotation for *args
+              # ANN003: Missing type annotation for **kwargs
+              # RETURNS:
+              # ANN201: Missing return type annotation for public function
+              # ANN202: Missing return type annotation for private function
+              # ANN205: Missing return type annotation for staticmethod
+              # ANN206: Missing return type annotation for classmethod
+              # EXCLUIDAS: ANN101(self), ANN102(cls), ANN204(__init__), ANN401(Any)
+
+    # === SEGURIDAD Y CALIDAD ===
+    "S",      # flake8-bandit: security vulnerability scanning
+    "BLE",    # flake8-blind-except: avoid bare except clauses
+    "A",      # flake8-builtins: avoid shadowing built-in names
+    "COM",    # flake8-commas: trailing comma enforcement
+
+    # === DJANGO ESPECÍFICO ===
+    "DJ",     # flake8-django: Django-specific antipatterns
+
+    # === TESTING ===
+    "PT",     # flake8-pytest-style: pytest best practices
+
+    # === LIMPIEZA DE CÓDIGO ===
+    "ERA",    # eradicate: remove commented-out code
+    "T20",    # flake8-print: detect print statements
+    "FIX",    # flake8-fixme: detect TODO/FIXME comments
+
+    # === LOGGING Y DEBUG ===
+    "G",      # flake8-logging-format: logging format string validation
+    "T10",    # flake8-debugger: detect debugger imports/calls
+
+    # === RUFF ESPECÍFICO ===
+    "RUF",    # Ruff-specific rules: Ruff's own additional checks
+]
+
+# REGLAS A IGNORAR (compatibilidad con Black y herramientas existentes)
+ignore = [
+    # === COMPATIBILIDAD CON BLACK/AUTOPEP8 ===
+    "E501",   # Line too long
+    "E203",   # Whitespace before ':'
+
+    # === AJUSTES ESPECÍFICOS EASY PAY ===
+    "S101",   # Use of assert
+    "S311",   # Standard pseudo-random generators
+    "DJ001",  # Avoid using null=True on string-based fields
+
+    # === TRAILING COMMAS (CONFLICTS WITH FORMATTER) ===
+    "COM812", # missing-trailing-comma: conflicts with formatter
+    "COM819", # prohibited-trailing-comma: conflicts with COM812
+
+    # === IMPORTS ===
+    # "I001",   # isort: unsorted-imports - RE-ENABLED for proper sorting
+    "F401",   # Imported but unused
+
+    # === TYPE ANNOTATIONS (EXCEPCIONES) ===
+    "ANN101", # Missing type annotation for 'self' (removed/deprecated)
+    "ANN102", # Missing type annotation for 'cls' (removed/deprecated)
+    "ANN204", # Missing return type annotation for special method (__init__, etc.)
+    "ANN401", # Dynamically typed expressions (Any) - allowed when needed
+    
+    # === DOCSTRINGS (opcional por ahora) ===
+    "D100",   # Missing docstring in public module
+    "D101",   # Missing docstring in public class
+    "D102",   # Missing docstring in public method
+    "D103",   # Missing docstring in public function
+    "D104",   # Missing docstring in public package
+]
+
+
+# CONFIGURACIONES POR ARCHIVO
+[lint.per-file-ignores]
+# Tests pueden tener print statements, asserts y typing más relajado
+"tests/**/*.py" = ["T20", "S101", "PT011", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202"]
+"**/test_*.py" = ["T20", "S101", "PT011", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202"]
+"**/tests.py" = ["T20", "S101", "PT011", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202"]
+
+# Django settings pueden tener imports no usados y typing relajado
+"**/settings/**/*.py" = ["F401", "F403", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202"]
+"**/conf/**/*.py" = ["F401", "F403", "ANN001", "ANN002", "ANN003", "ANN201", "ANN202"]
+
+# Migraciones Django - sin restricciones
+"**/migrations/**/*.py" = ["ALL"]
+
+# Django management commands - typing más relajado
+"**/management/commands/**/*.py" = ["ANN001", "ANN002", "ANN003", "ANN201"]
+
+# Scripts pueden tener print statements
+"scripts/**/*.py" = ["T20"]
+"manage.py" = ["T20"]
+
+# Logger puede usar Any por su naturaleza genérica
+"basic/logger.py" = ["ANN401"]
+
+# Repository puede usar Any en **kwargs para flexibilidad
+"easy_pay/repository/collection_repository.py" = ["ANN401"]
+
+# ============================================================================
+# CONFIGURACIÓN DE ISORT (IMPORTS)
+# ============================================================================
+
+[lint.isort]
+# CONFIGURACIÓN MANUAL DE MÓDULOS
+known-first-party = [
+    "easy_pay",
+    "destacame",
+    "accounts",
+    "addresses",
+    "dashboard",
+    "executive_simulator",
+    "historical",
+    "payment_agreements",
+    "stats",
+    "upload_files",
+    "user_manager",
+    "commons"
+]
+
+known-third-party = [
+    "django",
+    "rest_framework",
+    "celery",
+    "boto3",
+    "requests",
+    "jwt",
+    "sentry_sdk"
+]
+
+force-to-top = ["__future__"]
+
+# CONFIGURACIÓN DE GRUPOS
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+
+# FORMATO
+force-single-line = true
+force-sort-within-sections = true  
+combine-as-imports = false
+split-on-trailing-comma = false
+force-wrap-aliases = false
+single-line-exclusions = []
+
+# ============================================================================
+# OTRAS CONFIGURACIONES
+# ============================================================================
+
+[lint.pycodestyle]
+max-line-length = 88
+
+[lint.flake8-bugbear]
+extend-immutable-calls = [
+    "django.conf.settings.configure",
+    "django.urls.path",
+    "django.urls.include"
+]
+
+[lint.flake8-bandit]
+check-typed-exception = true
+
+[lint.pep8-naming]
+classmethod-decorators = [
+    "classmethod",
+    "django.utils.decorators.method_decorator"
+]
+
+staticmethod-decorators = [
+    "staticmethod",
+    "django.utils.decorators.method_decorator"
+]
+
+[lint.flake8-annotations]
+# Suprimir argumentos dummy (self, cls ya están excluidos en ignore)
+suppress-dummy-args = true
+# Permitir type-checking imports dinámicos
+allow-star-arg-any = false
+# Suprimir anotaciones en funciones que contienen solo ...
+suppress-none-returning = false
+
+# ============================================================================
+# CONFIGURACIÓN DEL FORMATTER (Compatible con Black)
+# ============================================================================
+
+[format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = 88
+line-ending = "lf"
+skip-magic-trailing-comma = false

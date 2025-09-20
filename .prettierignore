@@ -1,0 +1,118 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production builds
+dist/
+build/
+.next/
+.astro/
+.output/
+.nuxt/
+
+# Environment and config
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Git
+.git/
+.gitignore
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+*.min.js
+*.min.css
+*.bundle.js
+*.bundle.css
+
+# Documentation
+CHANGELOG.md
+CHANGELOG.rst
+
+# Static assets that shouldn't be formatted
+public/
+static/
+assets/
+media/
+images/
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test files that might contain specific formatting
+**/*.test.js.snap
+**/*.spec.js.snap
