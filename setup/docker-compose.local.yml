@@ -11,6 +11,12 @@ services:
       - POSTGRES_PASSWORD=portfolio_password
       - PGDATA=/var/lib/postgresql/data/pgdata
     command: ["postgres", "-c", "log_statement=all", "-c", "log_duration=on"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portfolio_local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Neon Proxy - Local configuration (disabled - not critical for development)
   # neon-proxy:

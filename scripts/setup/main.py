@@ -855,133 +855,144 @@ def main(flags: Dict[str, Any]) -> None:
                 print(f"   - Puerto {port} está en uso")
             print("Los servicios pueden fallar al iniciar. Use --action=\"clean\" si es necesario.")
 
-    # Ejecutar acción
-    if action == 'up':
-        additional_args = []
-        if build:
-            additional_args.append('--build')
-        if detach:
-            additional_args.append('-d')
+    # Generar Dockerfiles temporales antes de ejecutar acciones que los necesiten
+    temp_dockerfiles = []
+    if action in ['up', 'restart', 'build']:
+        temp_dockerfiles = generate_temp_dockerfiles(project_path, verbose)
 
-        if verbose:
-            print(f"🚀 Levantando servicios...")
-
-        exit_code, stdout, stderr = execute_docker_compose_command(
-            cmd_parts, 'up', compose_services, project_path, verbose, additional_args
-        )
-
-        if exit_code == 0:
-            print("✅ Servicios levantados exitosamente")
-
+    try:
+        # Ejecutar acción
+        if action == 'up':
+            additional_args = []
+            if build:
+                additional_args.append('--build')
             if detach:
-                # Esperar a que servicios estén healthy
-                if wait_for_services_health(cmd_parts, compose_services, project_path, 60, verbose):
-                    print("🎉 Todos los servicios están operativos")
+                additional_args.append('-d')
 
-                    # Configurar LocalStack API Gateway solo si está realmente corriendo
-                    localstack_running = False
-                    try:
-                        result = subprocess.run(
-                            ["docker", "ps", "--format", "{{.Names}}", "--filter", "name=localstack"],
-                            capture_output=True,
-                            text=True,
-                            timeout=5
-                        )
-                        localstack_running = "localstack" in result.stdout
-                    except:
+            if verbose:
+                print(f"🚀 Levantando servicios...")
+
+            exit_code, stdout, stderr = execute_docker_compose_command(
+                cmd_parts, 'up', compose_services, project_path, verbose, additional_args
+            )
+
+            if exit_code == 0:
+                print("✅ Servicios levantados exitosamente")
+
+                if detach:
+                    # Esperar a que servicios estén healthy
+                    if wait_for_services_health(cmd_parts, compose_services, project_path, 60, verbose):
+                        print("🎉 Todos los servicios están operativos")
+
+                        # Configurar LocalStack API Gateway solo si está realmente corriendo
                         localstack_running = False
+                        try:
+                            result = subprocess.run(
+                                ["docker", "ps", "--format", "{{.Names}}", "--filter", "name=localstack"],
+                                capture_output=True,
+                                text=True,
+                                timeout=5
+                            )
+                            localstack_running = "localstack" in result.stdout
+                        except:
+                            localstack_running = False
 
-                    if localstack_running and ('localstack' in [s.lower() for s in compose_services] or 'all' in services_list):
-                        if verbose:
-                            print("\n🌐 Configurando LocalStack API Gateway...")
+                        if localstack_running and ('localstack' in [s.lower() for s in compose_services] or 'all' in services_list):
+                            if verbose:
+                                print("\n🌐 Configurando LocalStack API Gateway...")
 
-                        if setup_localstack_api_gateway(project_path, verbose):
-                            print("✅ LocalStack API Gateway configurado exitosamente")
-                        else:
-                            print("⚠️  LocalStack API Gateway no pudo ser configurado completamente")
-                    elif verbose and 'all' in services_list:
-                        print("ℹ️  LocalStack no está habilitado - saltando configuración")
-                else:
-                    print("⚠️  Algunos servicios pueden no estar completamente listos")
+                            if setup_localstack_api_gateway(project_path, verbose):
+                                print("✅ LocalStack API Gateway configurado exitosamente")
+                            else:
+                                print("⚠️  LocalStack API Gateway no pudo ser configurado completamente")
+                        elif verbose and 'all' in services_list:
+                            print("ℹ️  LocalStack no está habilitado - saltando configuración")
+                    else:
+                        print("⚠️  Algunos servicios pueden no estar completamente listos")
 
-                # Mostrar estado
+                    # Mostrar estado
+                    show_services_status(cmd_parts, project_path, verbose)
+
+                    # Mostrar URLs disponibles del sistema
+                    show_available_urls(verbose)
+
+                    # Seguir logs si se solicitó
+                    if follow_logs:
+                        follow_services_logs(cmd_parts, compose_services, project_path, verbose)
+            else:
+                print("❌ Error levantando servicios")
+                if verbose:
+                    print(f"stdout: {stdout}")
+                    print(f"stderr: {stderr}")
+                sys.exit(exit_code)
+
+        elif action == 'down':
+            if verbose:
+                print(f"⬇️  Bajando servicios...")
+
+            exit_code, stdout, stderr = execute_docker_compose_command(
+                cmd_parts, 'down', [], project_path, verbose, ['--remove-orphans']
+            )
+
+            if exit_code == 0:
+                print("✅ Servicios bajados exitosamente")
+            else:
+                print("❌ Error bajando servicios")
+                if verbose:
+                    print(f"stderr: {stderr}")
+                sys.exit(exit_code)
+
+        elif action == 'restart':
+            if verbose:
+                print(f"🔄 Reiniciando servicios...")
+
+            exit_code, stdout, stderr = execute_docker_compose_command(
+                cmd_parts, 'restart', compose_services, project_path, verbose
+            )
+
+            if exit_code == 0:
+                print("✅ Servicios reiniciados exitosamente")
                 show_services_status(cmd_parts, project_path, verbose)
+            else:
+                print("❌ Error reiniciando servicios")
+                if verbose:
+                    print(f"stderr: {stderr}")
+                sys.exit(exit_code)
 
-                # Mostrar URLs disponibles del sistema
-                show_available_urls(verbose)
-
-                # Seguir logs si se solicitó
-                if follow_logs:
-                    follow_services_logs(cmd_parts, compose_services, project_path, verbose)
-        else:
-            print("❌ Error levantando servicios")
-            if verbose:
-                print(f"stdout: {stdout}")
-                print(f"stderr: {stderr}")
-            sys.exit(exit_code)
-
-    elif action == 'down':
-        if verbose:
-            print(f"⬇️  Bajando servicios...")
-
-        exit_code, stdout, stderr = execute_docker_compose_command(
-            cmd_parts, 'down', [], project_path, verbose, ['--remove-orphans']
-        )
-
-        if exit_code == 0:
-            print("✅ Servicios bajados exitosamente")
-        else:
-            print("❌ Error bajando servicios")
-            if verbose:
-                print(f"stderr: {stderr}")
-            sys.exit(exit_code)
-
-    elif action == 'restart':
-        if verbose:
-            print(f"🔄 Reiniciando servicios...")
-
-        exit_code, stdout, stderr = execute_docker_compose_command(
-            cmd_parts, 'restart', compose_services, project_path, verbose
-        )
-
-        if exit_code == 0:
-            print("✅ Servicios reiniciados exitosamente")
+        elif action == 'status':
             show_services_status(cmd_parts, project_path, verbose)
-        else:
-            print("❌ Error reiniciando servicios")
-            if verbose:
-                print(f"stderr: {stderr}")
-            sys.exit(exit_code)
 
-    elif action == 'status':
-        show_services_status(cmd_parts, project_path, verbose)
+        elif action == 'logs':
+            follow_services_logs(cmd_parts, compose_services, project_path, verbose)
 
-    elif action == 'logs':
-        follow_services_logs(cmd_parts, compose_services, project_path, verbose)
+        elif action == 'clean':
+            # Primero bajar servicios
+            print("🛑 Bajando servicios antes de limpiar...")
+            execute_docker_compose_command(cmd_parts, 'down', [], project_path, verbose,
+                                         ['--remove-orphans', '--volumes'])
 
-    elif action == 'clean':
-        # Primero bajar servicios
-        print("🛑 Bajando servicios antes de limpiar...")
-        execute_docker_compose_command(cmd_parts, 'down', [], project_path, verbose,
-                                     ['--remove-orphans', '--volumes'])
+            # Limpiar recursos Docker
+            clean_docker_resources(project_path, verbose)
 
-        # Limpiar recursos Docker
-        clean_docker_resources(project_path, verbose)
+        if verbose:
+            print(f"\n🎯 Operación '{action}' completada")
 
-    if verbose:
-        print(f"\n🎯 Operación '{action}' completada")
+    finally:
+        # Limpiar Dockerfiles temporales siempre
+        if temp_dockerfiles:
+            cleanup_temp_dockerfiles(temp_dockerfiles, verbose)
 
 
 def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) -> Dict[str, Dict[str, Any]]:
     """
-    Detecta y parsea archivos api-gateway.yml en funciones lambda.
+    Detecta y parsea archivos config.yml en funciones lambda.
 
     Args:
         project_path: Ruta raíz del proyecto
         verbose: Mostrar información detallada
 
     Returns:
-        Dict con nombre de lambda y su configuración API Gateway
+        Dict con nombre de lambda y su configuración completa
     """
     configs = {}
     lambda_base_path = Path(project_path) / "server" / "lambda"
@@ -994,25 +1005,166 @@ def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) ->
     # Buscar directorios de lambdas
     for lambda_dir in lambda_base_path.iterdir():
         if lambda_dir.is_dir() and not lambda_dir.name.startswith('.'):
-            api_gateway_file = lambda_dir / "setup" / "api-gateway.yml"
+            config_file = lambda_dir / "setup" / "config.yml"
 
-            if api_gateway_file.exists():
+            if config_file.exists():
                 try:
-                    with open(api_gateway_file, 'r', encoding='utf-8') as f:
+                    with open(config_file, 'r', encoding='utf-8') as f:
                         config = yaml.safe_load(f)
                         configs[lambda_dir.name] = config
                         if verbose:
-                            print(f"✅ Configuración API Gateway encontrada: {lambda_dir.name}")
+                            print(f"✅ Configuración lambda encontrada: {lambda_dir.name}")
                 except yaml.YAMLError as e:
                     if verbose:
-                        print(f"❌ Error parseando {api_gateway_file}: {e}")
+                        print(f"❌ Error parseando {config_file}: {e}")
                 except Exception as e:
                     if verbose:
-                        print(f"❌ Error leyendo {api_gateway_file}: {e}")
+                        print(f"❌ Error leyendo {config_file}: {e}")
             elif verbose:
-                print(f"⚠️  No se encontró api-gateway.yml en {lambda_dir.name}/setup/")
+                print(f"⚠️  No se encontró config.yml en {lambda_dir.name}/setup/")
 
     return configs
+
+
+def generate_temp_dockerfile(lambda_name: str, config: Dict[str, Any], project_path: str, verbose: bool = False) -> str:
+    """
+    Genera un Dockerfile temporal para una función lambda basado en config.yml.
+
+    Args:
+        lambda_name: Nombre de la función lambda
+        config: Configuración de la lambda desde config.yml
+        project_path: Ruta raíz del proyecto
+        verbose: Mostrar información detallada
+
+    Returns:
+        str: Ruta del Dockerfile temporal generado
+    """
+    lambda_config = config.get('lambda_function', {})
+    runtime = lambda_config.get('runtime', 'python3.13')
+    handler = lambda_config.get('handler', 'src.lambda_function.lambda_handler')
+    service_name = lambda_config.get('service_name', lambda_name)
+
+    # Crear contenido del Dockerfile dinámicamente
+    dockerfile_content = f"""# {lambda_name.title()} Lambda - Temporary Dockerfile
+# Generated dynamically from config.yml - Portfolio Serverless System
+# Runtime: {runtime} | Handler: {handler} | Service: {service_name}
+
+FROM public.ecr.aws/lambda/{runtime.replace('python', 'python:')}
+
+# Install development dependencies
+RUN yum update -y && \\
+    yum install -y curl && \\
+    yum clean all
+
+# Set work directory
+WORKDIR ${{LAMBDA_TASK_ROOT}}
+
+# Copy requirements and install dependencies
+COPY lambda/{lambda_name}/setup/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY lambda/{lambda_name}/src/ ./
+
+# Copy shared modules (if any)
+COPY shared/ ./shared/ 2>/dev/null || true
+
+# Development mode configuration from config.yml
+ENV PYTHONPATH="${{LAMBDA_TASK_ROOT}}:${{PYTHONPATH}}"
+ENV LOG_LEVEL=debug
+ENV ENVIRONMENT=development
+ENV SERVICE_NAME={service_name}
+
+# Expose port for development
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \\
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Start development server (FastAPI with uvicorn)
+CMD ["uvicorn", "main:create_app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+"""
+
+    # Escribir Dockerfile temporal
+    dockerfile_path = Path(project_path) / "server" / "lambda" / lambda_name / "Dockerfile.dev"
+
+    try:
+        with open(dockerfile_path, 'w', encoding='utf-8') as f:
+            f.write(dockerfile_content)
+
+        if verbose:
+            print(f"✅ Dockerfile temporal generado: {dockerfile_path}")
+
+        return str(dockerfile_path)
+
+    except Exception as e:
+        if verbose:
+            print(f"❌ Error generando Dockerfile para {lambda_name}: {e}")
+        return ""
+
+
+def generate_temp_dockerfiles(project_path: str, verbose: bool = False) -> List[str]:
+    """
+    Genera Dockerfiles temporales para todas las funciones lambda.
+
+    Args:
+        project_path: Ruta raíz del proyecto
+        verbose: Mostrar información detallada
+
+    Returns:
+        List[str]: Lista de rutas de Dockerfiles temporales generados
+    """
+    if verbose:
+        print("🐳 Generando Dockerfiles temporales para funciones Lambda...")
+
+    temp_files = []
+
+    # Obtener configuraciones de todas las lambdas
+    lambda_configs = find_lambda_api_gateway_configs(project_path, verbose)
+
+    if not lambda_configs:
+        if verbose:
+            print("⚠️  No se encontraron configuraciones de lambda")
+        return temp_files
+
+    # Generar Dockerfile para cada lambda
+    for lambda_name, config in lambda_configs.items():
+        dockerfile_path = generate_temp_dockerfile(lambda_name, config, project_path, verbose)
+        if dockerfile_path:
+            temp_files.append(dockerfile_path)
+
+    if verbose:
+        print(f"✅ Generados {len(temp_files)} Dockerfiles temporales")
+
+    return temp_files
+
+
+def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> None:
+    """
+    Limpia los Dockerfiles temporales después de usarlos.
+
+    Args:
+        temp_files: Lista de rutas de archivos temporales
+        verbose: Mostrar información detallada
+    """
+    if not temp_files:
+        return
+
+    if verbose:
+        print("🧹 Limpiando Dockerfiles temporales...")
+
+    for file_path in temp_files:
+        try:
+            Path(file_path).unlink(missing_ok=True)
+            if verbose:
+                print(f"   🗑️  Eliminado: {file_path}")
+        except Exception as e:
+            if verbose:
+                print(f"   ⚠️  Error eliminando {file_path}: {e}")
+
+    if verbose:
+        print(f"✅ Limpiados {len(temp_files)} archivos temporales")
 
 
 def check_localstack_ready(max_attempts: int = 30, verbose: bool = False) -> bool:

@@ -1,0 +1,101 @@
+# Portfolio Serverless System - Experience Lambda Configuration
+# Unified configuration file for Lambda function and API Gateway
+
+lambda_function:
+  name: experience
+  description: "Professional experience management Lambda function"
+  language: python
+  runtime: python3.13
+  handler: src.lambda_function.lambda_handler
+  package_file: requirements.txt
+  package_type: zip
+  service_name: experience
+  timeout: 30
+  memory_size: 512
+
+  # Shared modules this lambda uses
+  shared_modules:
+    - database
+    - models
+    - repository
+    - config
+    - utils
+    - exceptions
+
+api_gateway:
+  path: "/experience"
+  cors_enabled: true
+  methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+
+  # Sub-resources for enhanced API structure
+  sub_resources:
+    - path: "timeline"
+      description: "Experience timeline view"
+      methods:
+        - GET
+
+    - path: "current"
+      description: "Current employment endpoint"
+      methods:
+        - GET
+
+    - path: "technologies"
+      description: "Technologies used across experience"
+      methods:
+        - GET
+
+  # CORS configuration
+  cors:
+    allow_origins:
+      - "*"
+    allow_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    allow_headers:
+      - "Content-Type"
+      - "X-Amz-Date"
+      - "Authorization"
+      - "X-Api-Key"
+      - "X-Amz-Security-Token"
+      - "X-Correlation-ID"
+    max_age: 3600
+
+# Shared modules deployment configuration
+deployment:
+  strategy: copy
+  target_dir: shared
+  preserve_structure: true
+  include_compiled: false
+  exclude_patterns:
+    - "*.md"
+    - "*.txt"
+    - "test_*"
+    - "*_test.py"
+
+# Environment variables configuration
+environment:
+  required:
+    - DATABASE_URL
+    - ENVIRONMENT
+  optional:
+    - LOG_LEVEL
+    - DEBUG_MODE
+
+# Health check configuration
+health_check:
+  enabled: true
+  endpoint: /health
+  dependencies:
+    - database
+    - shared_modules
+
+# Monitoring configuration
+monitoring:
+  cloudwatch_logs: true
