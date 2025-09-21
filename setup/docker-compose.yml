@@ -85,7 +85,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8001:8080"
@@ -110,7 +110,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8002:8080"
@@ -135,7 +135,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8003:8080"
@@ -160,7 +160,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8004:8080"
@@ -218,7 +218,7 @@ services:
       - NODE_ENV=development
       - ASTRO_PORT=4321
       - API_BASE_URL=http://api-gateway
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
     ports:
       - "4321:4321"
     networks:
@@ -250,35 +250,37 @@ services:
       - tools
 
   # LocalStack - AWS Services Emulation for Local Development
-  localstack:
-    image: localstack/localstack:latest
-    container_name: portfolio-localstack
-    restart: unless-stopped
-    environment:
-      - SERVICES=lambda,apigateway,iam,sts,logs,cloudformation
-      - DEBUG=1
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - HOSTNAME_EXTERNAL=localstack
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - LAMBDA_EXECUTOR=docker
-      - LAMBDA_DOCKER_NETWORK=portfolio_portfolio-network
-      - LAMBDA_REMOVE_CONTAINERS=true
-      - API_GATEWAY_ENDPOINT_STRATEGY=domain
-    ports:
-      - "4566:4566"  # LocalStack Gateway
-      - "4510-4559:4510-4559"  # External services port range
-    networks:
-      portfolio-network:
-        ipv4_address: 172.20.0.50
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "../scripts/setup/localstack:/etc/localstack/init/ready.d"
-      - "./localstack-data:/var/lib/localstack"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # Temporarily disabled - not needed for current development workflow
+  # Uncomment when AWS service emulation is required
+  # localstack:
+  #   image: localstack/localstack:latest
+  #   container_name: portfolio-localstack
+  #   restart: unless-stopped
+  #   environment:
+  #     - SERVICES=lambda,apigateway,iam,sts,logs,cloudformation
+  #     - DEBUG=1
+  #     - DOCKER_HOST=unix:///var/run/docker.sock
+  #     - HOSTNAME_EXTERNAL=localstack
+  #     - AWS_DEFAULT_REGION=us-east-1
+  #     - AWS_ACCESS_KEY_ID=test
+  #     - AWS_SECRET_ACCESS_KEY=test
+  #     - LAMBDA_EXECUTOR=docker
+  #     - LAMBDA_DOCKER_NETWORK=portfolio_portfolio-network
+  #     - LAMBDA_REMOVE_CONTAINERS=true
+  #     - API_GATEWAY_ENDPOINT_STRATEGY=domain
+  #   ports:
+  #     - "4566:4566"  # LocalStack Gateway
+  #     - "4510-4559:4510-4559"  # External services port range
+  #   networks:
+  #     portfolio-network:
+  #       ipv4_address: 172.20.0.50
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+  #     - "../scripts/setup/localstack:/etc/localstack/init/ready.d"
+  #     # Note: localstack-data volume removed to avoid permission issues
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s

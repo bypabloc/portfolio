@@ -81,12 +81,14 @@ python scripts/run.py setup --action=clean --verbose
 ## ¿Qué hace?
 
 - 🚀 **Levanta entornos completos** con un solo comando
-- 🐳 **Maneja múltiples servicios** (app, server, database, proxy)
+- 🐳 **Maneja múltiples servicios** (app, server, database, gateway)
 - 🔧 **Configura variables de entorno** específicas por entorno
 - 📊 **Monitorea estado** de servicios y dependencias
 - 🔄 **Reinicia servicios** selectivamente o todos
 - 🧹 **Limpia recursos** Docker automáticamente
 - ⚡ **Hot reload** para desarrollo activo
+- 🌐 **API Gateway consolidado** - Todos los microservicios en un solo puerto
+- 🔒 **Gestión centralizada** - Todos los comandos Docker van a través del script
 
 ## Arquitectura de servicios
 
@@ -108,9 +110,15 @@ python scripts/run.py setup --action=clean --verbose
 - **Branching**: Simulado con diferentes esquemas por entorno
 
 ### API Gateway (Nginx)
-- **Servicio**: `portfolio-gateway`
-- **Puerto**: `8080`
-- **Routing**: Enruta requests de la app a microservios server
+- **Servicio**: `api-gateway`
+- **Puerto**: `8090` (cambiado de 8080 para evitar conflictos)
+- **Routing**: Consolida todos los microservicios en URLs limpias
+- **URLs disponibles**:
+  - `http://localhost:8090/health` - Health check del gateway
+  - `http://localhost:8090/api/personal-info` - Información personal
+  - `http://localhost:8090/api/skills` - Gestión de habilidades
+  - `http://localhost:8090/api/experience` - Experiencia profesional
+  - `http://localhost:8090/api/projects` - Portfolio de proyectos
 
 ## Entornos disponibles
 
@@ -313,11 +321,12 @@ portfolio/
 ```bash
 NODE_ENV=development
 ASTRO_PORT=4321
-API_GATEWAY_URL=http://localhost:8080
+API_GATEWAY_URL=http://localhost:8090
+# Microservicios individuales (para debug directo)
 PERSONAL_INFO_API_URL=http://localhost:8001
-EXPERIENCE_API_URL=http://localhost:8002
-PROJECTS_API_URL=http://localhost:8003
-SKILLS_API_URL=http://localhost:8004
+SKILLS_API_URL=http://localhost:8002
+EXPERIENCE_API_URL=http://localhost:8003
+PROJECTS_API_URL=http://localhost:8004
 DATABASE_URL=postgresql://postgres:password@localhost:5432/portfolio_local
 NEON_BRANCH=local
 HOT_RELOAD=true
@@ -328,7 +337,7 @@ DEBUG_MODE=true
 ```bash
 NODE_ENV=test
 ASTRO_PORT=4321
-API_GATEWAY_URL=http://localhost:8080
+API_GATEWAY_URL=http://localhost:8090
 DATABASE_URL=postgresql://postgres:password@localhost:5432/portfolio_test
 NEON_BRANCH=test
 HOT_RELOAD=false
@@ -339,7 +348,7 @@ DEBUG_MODE=false
 ```bash
 NODE_ENV=development
 ASTRO_PORT=4321
-API_GATEWAY_URL=http://localhost:8080
+API_GATEWAY_URL=http://localhost:8090
 DATABASE_URL=postgresql://postgres:password@localhost:5432/portfolio_dev
 NEON_BRANCH=dev
 HOT_RELOAD=true
@@ -351,7 +360,7 @@ LOG_LEVEL=info
 ```bash
 NODE_ENV=production
 ASTRO_PORT=4321
-API_GATEWAY_URL=http://localhost:8080
+API_GATEWAY_URL=http://localhost:8090
 DATABASE_URL=postgresql://postgres:password@localhost:5432/portfolio_prod
 NEON_BRANCH=main
 HOT_RELOAD=false
@@ -374,14 +383,16 @@ El script verifica:
 
 ### Logs estructurados por servicio:
 ```bash
-# Ver logs de un servicio específico
-docker-compose logs -f portfolio-app
+# ⚠️ IMPORTANTE: Usar siempre el script centralizado
+# NO usar comandos docker directamente
 
-# Ver logs de todos los server services
-docker-compose logs -f personal-info-lambda skills-lambda experience-lambda projects-lambda
+# Ver logs de servicios específicos con el script
+python scripts/run.py setup --action=logs --services=server --env=local --follow-logs
+python scripts/run.py setup --action=logs --services=gateway --env=local --follow-logs
+python scripts/run.py setup --action=logs --services=db --env=local --follow-logs
 
-# Ver logs con timestamps
-docker-compose logs -f --timestamps
+# Ver logs de microservicios específicos
+python scripts/run.py setup --action=logs --services=server --server-services=personal-info --env=local --follow-logs
 ```
 
 ### Métricas de desarrollo:
@@ -390,19 +401,43 @@ docker-compose logs -f --timestamps
 - Frontend build status
 - Memory usage por servicio
 
+## ✅ Estado Actual Verificado (2025-09-21)
+
+El sistema está **completamente operativo** con los siguientes servicios confirmados funcionando:
+
+### 🎯 APIs Verificadas (Status 200)
+- ✅ **API Gateway Health**: `http://localhost:8090/health`
+- ✅ **Personal Info**: `http://localhost:8090/api/personal-info`
+- ✅ **Skills**: `http://localhost:8090/api/skills`
+- ✅ **Experience**: `http://localhost:8090/api/experience`
+- ✅ **Projects**: `http://localhost:8090/api/projects`
+
+### 🏗️ Servicios Activos
+- ✅ **Base de datos**: PostgreSQL en puerto 5432 (healthy)
+- ✅ **Microservicios**: 4 Lambda functions en puertos 8001-8004 (healthy)
+- ✅ **API Gateway**: Nginx en puerto 8090 (healthy)
+- ✅ **Red de contenedores**: Configuración limpia y funcional
+
+### 🛠️ Correcciones Implementadas
+- ✅ **Neon-proxy deshabilitado**: No es crítico para desarrollo local
+- ✅ **URLs consolidadas**: Todas las APIs accesibles desde puerto 8090
+- ✅ **Variables de entorno**: Actualizadas para apuntar directamente a PostgreSQL
+- ✅ **Conflictos de red**: Resueltos completamente
+
 ## Casos de uso comunes
 
 - **Desarrollo activo**: `--env="local" --follow-logs`
-- **Testing local**: `--env="test" --services="server,db"
+- **Testing local**: `--env="test" --services="server,db"`
 - **Demo/presentación**: `--env="prod" --verbose`
 - **Debug de API**: `--env="local" --services="server" --server-services="personal-info"` o cualquier lambda específica
 - **App only**: `--env="local" --services="app"`
 - **Full stack development**: `--env="local"` (default)
+- **Solo backend + API Gateway**: `--env="local" --services="server,gateway,db"` ✅ **Recomendado para desarrollo API**
 
 ## Requisitos
 
 - **Docker**: v20+ con Docker Compose v2
-- **Puertos disponibles**: 4321, 8001-8004, 8080, 5432
+- **Puertos disponibles**: 4321, 8001-8004, 8090, 5432
 - **Memoria**: 2GB mínimo para entorno completo
 - **Espacio disco**: 1GB para imágenes Docker
 
@@ -423,9 +458,11 @@ python scripts/run.py setup --env="local" --build
 
 ### Reset completo:
 ```bash
+# ⚠️ IMPORTANTE: Usar solo el script centralizado para limpiar
+# NO usar comandos docker directamente
+
 # Limpiar todo y empezar de cero
 python scripts/run.py setup --action="clean" --verbose
-docker system prune -f
 python scripts/run.py setup --env="local" --build --verbose
 ```
 
@@ -436,3 +473,56 @@ python scripts/run.py setup --env="local" --build --verbose
 - **2**: Docker no disponible o falló
 - **3**: Servicios no levantaron correctamente
 - **4**: Healthchecks fallaron
+
+## 🏆 Mejores Prácticas
+
+### ⚠️ Gestión Centralizada de Docker
+**IMPORTANTE**: Todos los comandos de Docker deben ejecutarse a través del script setup:
+
+```bash
+# ✅ CORRECTO - Usar el script setup
+python scripts/run.py setup --action=status --verbose
+python scripts/run.py setup --action=restart --env=local
+python scripts/run.py setup --action=clean --verbose
+
+# ❌ INCORRECTO - NO usar comandos Docker directos
+docker ps
+docker stop container_name
+docker system prune
+```
+
+### 🔄 Workflow de Desarrollo Recomendado
+1. **Verificar estado**: `python scripts/run.py setup --action=status --verbose`
+2. **Levantar servicios**: `python scripts/run.py setup --action=up --services=server,gateway,db --env=local`
+3. **Probar APIs**: Usar las URLs del API Gateway en puerto 8090
+4. **Ver logs**: `python scripts/run.py setup --action=logs --follow-logs`
+5. **Limpiar al terminar**: `python scripts/run.py setup --action=down --env=local`
+
+### 🎯 URLs de API Gateway (Puerto 8090)
+Utilizar siempre las URLs consolidadas en lugar de los puertos individuales:
+
+```bash
+# ✅ RECOMENDADO - URLs consolidadas
+curl http://localhost:8090/api/personal-info
+curl http://localhost:8090/api/skills
+curl http://localhost:8090/api/experience
+curl http://localhost:8090/api/projects
+
+# ⚠️ SOLO PARA DEBUG - Puertos individuales
+curl http://localhost:8001/personal-info  # Solo si necesitas debug directo
+curl http://localhost:8002/skills
+curl http://localhost:8003/experience
+curl http://localhost:8004/projects
+```
+
+### 🐳 Troubleshooting Efectivo
+1. **Siempre usar verbose**: `--verbose` para ver detalles
+2. **Limpiar antes de rebuild**: `--action=clean` antes de `--build`
+3. **Verificar healthchecks**: El script espera automáticamente a que los servicios estén healthy
+4. **Consultar logs**: `--action=logs --follow-logs` para debug en tiempo real
+
+---
+
+**Última actualización**: 2025-09-21
+**Estado**: Sistema completamente operativo y verificado
+**Mantenedor**: Scripts de automatización centralizados

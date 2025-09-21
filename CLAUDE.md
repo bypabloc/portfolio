@@ -253,6 +253,7 @@ The documentation is designed to be implementation-agnostic but follows modern 2
 @./db/README.md
 @./server/README.md
 @./scripts/README.md
+@./scripts/setup/README.md
 
 @./memory-bank/projectbrief.md
 @./memory-bank/productContext.md

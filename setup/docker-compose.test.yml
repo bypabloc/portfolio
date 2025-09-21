@@ -20,18 +20,18 @@ services:
       # Base de datos en memoria para testing rápido - usar ruta diferente para evitar conflicto
       - /var/lib/postgresql/data/pgdata:noexec,nosuid,size=512m
 
-  # Neon Proxy - Test configuration
-  neon-proxy:
-    environment:
-      - NODE_ENV=test
-      - LOG_LEVEL=warn
+  # Neon Proxy - Test configuration (disabled - not critical for development)
+  # neon-proxy:
+  #   environment:
+  #     - NODE_ENV=test
+  #     - LOG_LEVEL=warn
 
   # Personal Info Service - Test environment
   personal-info-service:
     environment:
       - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - SERVICE_NAME=personal-info
       - LOG_LEVEL=warn
       - HOT_RELOAD=false
@@ -45,7 +45,7 @@ services:
     environment:
       - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - SERVICE_NAME=experience
       - LOG_LEVEL=warn
       - HOT_RELOAD=false
@@ -59,7 +59,7 @@ services:
     environment:
       - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - SERVICE_NAME=projects
       - LOG_LEVEL=warn
       - HOT_RELOAD=false
@@ -73,7 +73,7 @@ services:
     environment:
       - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_test
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - SERVICE_NAME=skills
       - LOG_LEVEL=warn
       - HOT_RELOAD=false

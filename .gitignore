@@ -347,3 +347,4 @@ pyrightconfig.json
 .vscode/*.log
 .env*
 !.env.example
+setup/localstack-data/

@@ -12,11 +12,11 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     command: ["postgres", "-c", "log_statement=all", "-c", "log_duration=on"]
 
-  # Neon Proxy - Local configuration
-  neon-proxy:
-    environment:
-      - NODE_ENV=development
-      - LOG_LEVEL=debug
+  # Neon Proxy - Local configuration (disabled - not critical for development)
+  # neon-proxy:
+  #   environment:
+  #     - NODE_ENV=development
+  #     - LOG_LEVEL=debug
 
   # Personal Info Lambda - Local development
   personal-info-lambda:
