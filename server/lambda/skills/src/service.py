@@ -6,8 +6,8 @@ Business logic layer for skills management
 from typing import Optional, List, Dict, Any
 import logging
 
-from .models import Skill, SkillResponse, SkillsListResponse, SkillsCategoryResponse
-from .repository import SkillRepositoryWrapper
+from models import Skill, SkillResponse, SkillsListResponse, SkillsCategoryResponse
+from repository import SkillRepositoryWrapper
 
 logger = logging.getLogger(__name__)
 

@@ -21,14 +21,14 @@ def flag(flags_dict):
     # Definir flags permitidas
     allowed_flags = [
         'env',                   # local|test|dev|prod
-        'services',              # frontend|backend|db|gateway|all
+        'services',              # app|server|db|gateway|all
         'action',                # up|down|restart|status|logs|clean
         'build',                 # forzar rebuild de imágenes
         'detach',                # ejecutar en background
         'project_path',          # path del proyecto
         'verbose',               # información detallada
         'follow_logs',           # seguir logs en tiempo real
-        'backend_services',      # microservicios backend específicos
+        'server_services',       # microservicios server específicos
         'help'                   # sistema de ayuda
     ]
 
@@ -42,7 +42,7 @@ def flag(flags_dict):
         'project_path': '',                # auto-detect del proyecto
         'verbose': False,                  # sin información detallada por defecto
         'follow_logs': False,              # no seguir logs por defecto
-        'backend_services': 'all',         # todos los microservicios backend
+        'server_services': 'all',          # todos los microservicios server
     }
 
     # Validar flags permitidas
@@ -59,7 +59,7 @@ def flag(flags_dict):
             f"Valores válidos: {', '.join(valid_envs)}"
         )
 
-    valid_services = ['frontend', 'backend', 'db', 'gateway', 'all']
+    valid_services = ['app', 'server', 'db', 'gateway', 'all']
     services_list = [s.strip() for s in flags_dict['services'].split(',') if s.strip()]
     for service in services_list:
         if service not in valid_services:
@@ -75,19 +75,19 @@ def flag(flags_dict):
             f"Valores válidas: {', '.join(valid_actions)}"
         )
 
-    # Procesar backend_services si se especificó (AWS Lambda functions)
-    backend_services_list = ['personal-info', 'skills', 'all']
-    if flags_dict['backend_services'] != 'all':
-        specified_services = [s.strip() for s in flags_dict['backend_services'].split(',') if s.strip()]
+    # Procesar server_services si se especificó (AWS Lambda functions)
+    server_services_list = ['personal-info', 'skills', 'experience', 'projects', 'all']
+    if flags_dict['server_services'] != 'all':
+        specified_services = [s.strip() for s in flags_dict['server_services'].split(',') if s.strip()]
         for service in specified_services:
-            if service not in backend_services_list:
+            if service not in server_services_list:
                 raise ValueError(
                     f"Lambda function inválida: {service}. "
-                    f"Valores válidos: {', '.join(backend_services_list)}"
+                    f"Valores válidos: {', '.join(server_services_list)}"
                 )
-        flags_dict['backend_services_list'] = specified_services
+        flags_dict['server_services_list'] = specified_services
     else:
-        flags_dict['backend_services_list'] = ['personal-info', 'skills']
+        flags_dict['server_services_list'] = ['personal-info', 'skills', 'experience', 'projects']
 
 
     # Procesar services como lista
@@ -102,12 +102,12 @@ def flag(flags_dict):
         # follow_logs no tiene sentido para status o clean
         flags_dict['follow_logs'] = False
 
-    # Si services incluye 'backend', validar backend_services
-    if 'backend' in services_list and flags_dict['backend_services'] != 'all':
-        if not flags_dict['backend_services_list']:
+    # Si services incluye 'server', validar server_services
+    if 'server' in services_list and flags_dict['server_services'] != 'all':
+        if not flags_dict['server_services_list']:
             raise ValueError(
-                "Si especifica --services=\"backend\", debe especificar "
-                "--backend-services con al menos un microservicio válido"
+                "Si especifica --services=\"server\", debe especificar "
+                "--server-services con al menos un microservicio válido"
             )
 
 
@@ -118,15 +118,15 @@ def flag(flags_dict):
         print(f"  ⚡ Acción: {flags_dict['action']}")
 
         if 'all' in services_list:
-            print(f"  🏗️  Servicios: Todos (frontend, backend, db, gateway)")
+            print(f"  🏗️  Servicios: Todos (app, server, db, gateway)")
         else:
             print(f"  🏗️  Servicios: {', '.join(services_list)}")
 
-        if 'backend' in services_list:
-            if flags_dict['backend_services'] == 'all':
-                print(f"  🔧 Backend: Todos los microservicios")
+        if 'server' in services_list:
+            if flags_dict['server_services'] == 'all':
+                print(f"  🔧 Server: Todos los microservicios")
             else:
-                print(f"  🔧 Backend: {', '.join(flags_dict['backend_services_list'])}")
+                print(f"  🔧 Server: {', '.join(flags_dict['server_services_list'])}")
 
 
         if flags_dict.get('build'):

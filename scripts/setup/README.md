@@ -4,7 +4,7 @@
 
 Automatiza la gestión de contenedores para el desarrollo local, testing, desarrollo y producción del sistema de portfolio serverless basado en Astro v5 + AWS Lambda + FastAPI + Neon PostgreSQL.
 
-🏗️ **Arquitectura**: Replica la arquitectura serverless en contenedores para desarrollo local con separación completa frontend/backend.
+🏗️ **Arquitectura**: Replica la arquitectura serverless en contenedores para desarrollo local con separación completa app/server.
 
 ## 🚀 Comandos rápidos
 
@@ -28,11 +28,11 @@ python scripts/run.py setup --action=status --services=db --env=local
 
 ### Servicios específicos
 ```bash
-# Solo frontend (Astro v5)
-python scripts/run.py setup --action=up --services=frontend --env=local --verbose
+# Solo app (Astro v5)
+python scripts/run.py setup --action=up --services=app --env=local --verbose
 
-# Solo backend (todos los microservices)
-python scripts/run.py setup --action=up --services=backend --env=local --verbose
+# Solo server (todos los microservices)
+python scripts/run.py setup --action=up --services=server --env=local --verbose
 
 # Solo API Gateway
 python scripts/run.py setup --action=up --services=gateway --env=local --verbose
@@ -81,7 +81,7 @@ python scripts/run.py setup --action=clean --verbose
 ## ¿Qué hace?
 
 - 🚀 **Levanta entornos completos** con un solo comando
-- 🐳 **Maneja múltiples servicios** (frontend, backend, database, proxy)
+- 🐳 **Maneja múltiples servicios** (app, server, database, proxy)
 - 🔧 **Configura variables de entorno** específicas por entorno
 - 📊 **Monitorea estado** de servicios y dependencias
 - 🔄 **Reinicia servicios** selectivamente o todos
@@ -90,15 +90,17 @@ python scripts/run.py setup --action=clean --verbose
 
 ## Arquitectura de servicios
 
-### Frontend (Astro v5)
-- **Servicio**: `portfolio-frontend`
+### App (Astro v5)
+- **Servicio**: `portfolio-app`
 - **Puerto**: `4321` (Astro dev server)
 - **Features**: Content Layer, Server Islands, Astro Actions
 - **Hot reload**: Habilitado en modo development
 
-### Backend Microservices (AWS Lambda + FastAPI)
+### Server Microservices (AWS Lambda + FastAPI)
 - **personal-info-lambda**: Puerto `8001` - Lambda para información personal
 - **skills-lambda**: Puerto `8002` - Lambda para gestión de habilidades
+- **experience-lambda**: Puerto `8003` - Lambda para experiencia profesional
+- **projects-lambda**: Puerto `8004` - Lambda para portfolio de proyectos
 
 ### Database (Neon PostgreSQL replica)
 - **Servicio**: `portfolio-db`
@@ -108,7 +110,7 @@ python scripts/run.py setup --action=clean --verbose
 ### API Gateway (Nginx)
 - **Servicio**: `portfolio-gateway`
 - **Puerto**: `8080`
-- **Routing**: Enruta requests del frontend a microservios backend
+- **Routing**: Enruta requests de la app a microservios server
 
 ## Entornos disponibles
 
@@ -151,7 +153,7 @@ python scripts/run.py setup --action=clean --verbose
 
 **Gestión de entornos:**
 - `--env="local|test|dev|release|prod"` - Entorno a levantar (default: local)
-- `--services="frontend|backend|db|gateway|all"` - Servicios específicos (default: all)
+- `--services="app|server|db|gateway|all"` - Servicios específicos (default: all)
 
 **Operaciones:**
 - `--action="up|down|restart|status|logs|clean"` - Acción a ejecutar (default: up)
@@ -164,7 +166,7 @@ python scripts/run.py setup --action=clean --verbose
 - `--follow-logs` - Seguir logs en tiempo real después de levantar (default: false)
 
 **Microservices específicos:**
-- `--backend-services="personal-info|skills"` - Lambda functions específicas
+- `--server-services="personal-info|skills|experience|projects"` - Lambda functions específicas
 
 ## Ejemplos de uso
 
@@ -182,29 +184,38 @@ python scripts/run.py setup --env="local" --follow-logs
 
 ### Gestión de servicios específicos
 ```bash
-# Solo frontend (Astro)
-python scripts/run.py setup --env="local" --services="frontend"
+# Solo app (Astro)
+python scripts/run.py setup --env="local" --services="app"
 
-# Solo backend microservices
-python scripts/run.py setup --env="local" --services="backend"
+# Solo server microservices
+python scripts/run.py setup --env="local" --services="server"
 
 # Solo base de datos
 python scripts/run.py setup --env="local" --services="db"
 
-# Frontend + API Gateway
-python scripts/run.py setup --env="local" --services="frontend,gateway"
+# App + API Gateway
+python scripts/run.py setup --env="local" --services="app,gateway"
 ```
 
-### Microservices backend específicos
+### Microservices server específicos
 ```bash
 # Solo lambda personal-info
-python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info"
+python scripts/run.py setup --env="local" --services="server" --server-services="personal-info"
 
-# Personal-info + Skills lambdas
-python scripts/run.py setup --env="local" --services="backend" --backend-services="personal-info,skills"
+# Solo lambda skills
+python scripts/run.py setup --env="local" --services="server" --server-services="skills"
 
-# Todos los microservices backend
-python scripts/run.py setup --env="local" --services="backend" --backend-services="all"
+# Solo lambda experience
+python scripts/run.py setup --env="local" --services="server" --server-services="experience"
+
+# Solo lambda projects
+python scripts/run.py setup --env="local" --services="server" --server-services="projects"
+
+# Múltiples lambdas específicas
+python scripts/run.py setup --env="local" --services="server" --server-services="personal-info,skills,experience"
+
+# Todos los microservices server
+python scripts/run.py setup --env="local" --services="server" --server-services="all"
 ```
 
 
@@ -246,8 +257,8 @@ python scripts/run.py setup --action="clean" --verbose
 # Rebuild completo del entorno
 python scripts/run.py setup --env="local" --build --verbose
 
-# Rebuild solo del frontend
-python scripts/run.py setup --env="local" --services="frontend" --build
+# Rebuild solo de la app
+python scripts/run.py setup --env="local" --services="app" --build
 ```
 
 ### Para CI/CD y testing
@@ -279,9 +290,9 @@ portfolio/
 │   ├── docker-compose.dev.yml          # Override para dev
 │   ├── docker-compose.release.yml      # Override para release/staging
 │   ├── docker-compose.prod.yml         # Override para prod
-│   ├── frontend/
+│   ├── app/
 │   │   └── Dockerfile                  # Astro v5 container
-│   ├── backend/                        # (Obsoleto - ver server/ en root)
+│   ├── server/                         # (Obsoleto - ver server/ en root)
 │   │   └── README.md                   # Referencia a nueva estructura en server/
 │   ├── nginx/
 │   │   ├── nginx.conf                 # API Gateway config
@@ -364,10 +375,10 @@ El script verifica:
 ### Logs estructurados por servicio:
 ```bash
 # Ver logs de un servicio específico
-docker-compose logs -f portfolio-frontend
+docker-compose logs -f portfolio-app
 
-# Ver logs de todos los backend services
-docker-compose logs -f personal-info-lambda skills-lambda
+# Ver logs de todos los server services
+docker-compose logs -f personal-info-lambda skills-lambda experience-lambda projects-lambda
 
 # Ver logs con timestamps
 docker-compose logs -f --timestamps
@@ -382,10 +393,10 @@ docker-compose logs -f --timestamps
 ## Casos de uso comunes
 
 - **Desarrollo activo**: `--env="local" --follow-logs`
-- **Testing local**: `--env="test" --services="backend,db"`
+- **Testing local**: `--env="test" --services="server,db"
 - **Demo/presentación**: `--env="prod" --verbose`
-- **Debug de API**: `--env="local" --services="backend" --backend-services="personal-info"`
-- **Frontend only**: `--env="local" --services="frontend"`
+- **Debug de API**: `--env="local" --services="server" --server-services="personal-info"` o cualquier lambda específica
+- **App only**: `--env="local" --services="app"`
 - **Full stack development**: `--env="local"` (default)
 
 ## Requisitos

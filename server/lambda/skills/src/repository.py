@@ -14,7 +14,7 @@ try:
 except ImportError:
     # Fallback if layer not available - implement basic repository
     import asyncio
-    from .models import Skill, SkillCreate, SkillUpdate
+    from models import Skill, SkillCreate, SkillUpdate
 
     class SkillRepository:
         """Fallback repository implementation"""

@@ -461,8 +461,8 @@ def check_required_ports(services_list: List[str], verbose: bool = False) -> Lis
     """
     # Mapeo de servicios a puertos
     service_ports = {
-        'frontend': [4321],
-        'backend': [8001, 8002, 8003, 8004],
+        'app': [4321],
+        'server': [8001, 8002, 8003, 8004],
         'gateway': [8080],
         'db': [5432]
     }
@@ -534,13 +534,13 @@ def build_docker_compose_command(config_files: Dict[str, str], env: str,
 
 
 def get_service_names_for_compose(services_list: List[str],
-                                 backend_services_list: List[str]) -> List[str]:
+                                 server_services_list: List[str]) -> List[str]:
     """
     Convierte la lista de servicios lógicos a nombres de servicios Docker Compose.
 
     Args:
         services_list: Lista de servicios lógicos
-        backend_services_list: Lista de microservicios backend
+        server_services_list: Lista de microservicios server
 
     Returns:
         List[str]: Nombres de servicios para Docker Compose
@@ -550,11 +550,11 @@ def get_service_names_for_compose(services_list: List[str],
     for service in services_list:
         if service == 'all':
             return []  # Docker Compose levantará todos por defecto
-        elif service == 'frontend':
-            compose_services.append('portfolio-frontend')
-        elif service == 'backend':
-            for backend_service in backend_services_list:
-                compose_services.append(f'{backend_service}-lambda')
+        elif service == 'app':
+            compose_services.append('portfolio-app')
+        elif service == 'server':
+            for server_service in server_services_list:
+                compose_services.append(f'{server_service}-lambda')
         elif service == 'db':
             compose_services.append('portfolio-db')
         elif service == 'gateway':
@@ -771,7 +771,7 @@ def main(flags: Dict[str, Any]) -> None:
     env = flags.get('env', 'local')
     action = flags.get('action', 'up')
     services_list = flags.get('services_list', ['all'])
-    backend_services_list = flags.get('backend_services_list', [])
+    server_services_list = flags.get('server_services_list', [])
     build = flags.get('build', False)
     detach = flags.get('detach', True)
     follow_logs = flags.get('follow_logs', False)
@@ -844,7 +844,7 @@ def main(flags: Dict[str, Any]) -> None:
     cmd_parts = build_docker_compose_command(config_files, env, compose_cmd, profiles)
 
     # Obtener nombres de servicios para docker-compose
-    compose_services = get_service_names_for_compose(services_list, backend_services_list)
+    compose_services = get_service_names_for_compose(services_list, server_services_list)
 
     # Verificar puertos si estamos levantando servicios
     if action == 'up':

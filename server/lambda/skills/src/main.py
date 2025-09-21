@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 from typing import Dict, Any, Optional
 import logging
 
-from .models import SkillsListResponse, SkillsCategoryResponse
-from .repository import SkillRepositoryWrapper
-from .service import SkillsService
+from models import SkillsListResponse, SkillsCategoryResponse
+from repository import SkillRepositoryWrapper
+from service import SkillsService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +46,15 @@ def create_app() -> FastAPI:
         return {
             "service": "skills",
             "status": "running",
+            "version": "1.0.0"
+        }
+
+    @app.get("/health", response_model=Dict[str, str])
+    async def health_check():
+        """Health check endpoint for container orchestration"""
+        return {
+            "status": "healthy",
+            "service": "skills",
             "version": "1.0.0"
         }
 

@@ -48,30 +48,29 @@ services:
       start_period: 40s
 
   # Neon Proxy - WebSocket and HTTP proxy for serverless driver compatibility
-  neon-proxy:
-    build:
-      context: ./database
-      dockerfile: neon-proxy.Dockerfile
-    container_name: neon-proxy
-    restart: unless-stopped
-    depends_on:
-      portfolio-db:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=development
-    volumes:
-      - ../db/neon-proxy-config.json:/app/config.json:ro
-    ports:
-      - "5433:5433"
-    networks:
-      portfolio-network:
-        ipv4_address: 172.20.0.11
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5433/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+  # Temporarily disabled - heavy build process, not critical for development
+  # neon-proxy:
+  #   build:
+  #     context: ./database
+  #     dockerfile: neon-proxy.Dockerfile
+  #   container_name: neon-proxy
+  #   restart: unless-stopped
+  #   depends_on:
+  #     portfolio-db:
+  #       condition: service_healthy
+  #   environment:
+  #     - PG_CONNECTION_STRING=postgres://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+  #   ports:
+  #     - "4444:4444"
+  #   networks:
+  #     portfolio-network:
+  #       ipv4_address: 172.20.0.11
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:4444"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
 
 
   # FastAPI Services - Direct HTTP access for development
@@ -86,7 +85,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8001:8080"
@@ -103,7 +102,7 @@ services:
   skills-lambda:
     build:
       context: ../server
-      dockerfile: lambda/skills/Dockerfile
+      dockerfile: lambda/skills/Dockerfile.dev
     container_name: skills-lambda
     restart: unless-stopped
     depends_on:
@@ -111,7 +110,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8002:8080"
@@ -119,7 +118,7 @@ services:
       portfolio-network:
         ipv4_address: 172.20.0.22
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -128,7 +127,7 @@ services:
   experience-lambda:
     build:
       context: ../server
-      dockerfile: lambda/experience/Dockerfile
+      dockerfile: lambda/experience/Dockerfile.dev
     container_name: experience-lambda
     restart: unless-stopped
     depends_on:
@@ -136,7 +135,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8003:8080"
@@ -144,7 +143,7 @@ services:
       portfolio-network:
         ipv4_address: 172.20.0.23
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -153,7 +152,7 @@ services:
   projects-lambda:
     build:
       context: ../server
-      dockerfile: lambda/projects/Dockerfile
+      dockerfile: lambda/projects/Dockerfile.dev
     container_name: projects-lambda
     restart: unless-stopped
     depends_on:
@@ -161,7 +160,7 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
       - LOG_LEVEL=info
     ports:
       - "8004:8080"
@@ -169,7 +168,7 @@ services:
       portfolio-network:
         ipv4_address: 172.20.0.24
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/2015-03-31/functions/function/invocations", "-X", "POST", "-H", "Content-Type: application/json", "-d", "{\"httpMethod\":\"GET\",\"path\":\"/health\"}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -190,7 +189,7 @@ services:
     environment:
       - NGINX_ENV=development
     ports:
-      - "8080:80"
+      - "8090:80"
     networks:
       portfolio-network:
         ipv4_address: 172.20.0.30
@@ -219,7 +218,7 @@ services:
       - NODE_ENV=development
       - ASTRO_PORT=4321
       - API_BASE_URL=http://api-gateway
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_local
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:4444/portfolio_local
     ports:
       - "4321:4321"
     networks:
