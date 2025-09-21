@@ -31,10 +31,10 @@
 
 - [ ] **Project Structure Initialization** (Pending)
   - [ ] Create basic directory structure
-  - [ ] Initialize frontend and backend scaffolding
+  - [ ] Initialize frontend and server scaffolding
   - [ ] Setup initial Docker environment
 
-### Phase 2: Backend Development (Planned)
+### Phase 2: Server Development (Planned)
 **Duration**: 2025-01-27 → 2025-02-10 (estimated)
 **Status**: Not Started
 
@@ -65,8 +65,8 @@
   - [ ] Server Islands implementation
 
 - [ ] **API Integration**
-  - [ ] Astro Actions for backend communication
-  - [ ] Contract testing between frontend/backend
+  - [ ] Astro Actions for server communication
+  - [ ] Contract testing between frontend/server
   - [ ] Performance optimization
 
 ### Phase 4: Integration & Deployment (Planned)
@@ -173,7 +173,7 @@
 4. **Technology Verification** - Confirm all version compatibility
 
 ### Next Month (February 2025)
-1. **Backend Implementation** - Complete AWS Lambda + FastAPI microservices
+1. **Server Implementation** - Complete AWS Lambda + FastAPI microservices
 2. **Database Integration** - Neon PostgreSQL with branching workflow
 3. **Local Development** - Full Docker Compose environment
 4. **Testing Foundation** - TDD implementation with pytest

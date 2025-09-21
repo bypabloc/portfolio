@@ -59,7 +59,7 @@ CREATE TABLE projects (
     demo_url VARCHAR(500),
     image_url VARCHAR(500),
     images TEXT[], -- Array of image URLs
-    category VARCHAR(100), -- frontend, backend, fullstack, mobile, etc.
+    category VARCHAR(100), -- frontend, server, fullstack, mobile, etc.
     featured BOOLEAN DEFAULT FALSE,
     order_index INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

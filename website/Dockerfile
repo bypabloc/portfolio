@@ -1,6 +1,5 @@
-# Website Service - Astro v5 with TypeScript
+# Frontend Service - Astro v5 with TypeScript
 # Portfolio Serverless System
-# Dockerfile que apunta al directorio website/ en la raíz del proyecto
 
 FROM node:22-alpine
 
@@ -19,7 +18,7 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S astro -u 1001
 
-# Copy package files (context is already ../website)
+# Copy package files
 COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
@@ -29,7 +28,7 @@ RUN npm install -g pnpm@latest
 # Install dependencies (development mode)
 RUN pnpm install
 
-# Copy application code (context is already ../website)
+# Copy application code
 COPY . .
 
 # Change ownership to nodejs user

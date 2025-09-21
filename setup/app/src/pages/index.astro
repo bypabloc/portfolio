@@ -1,0 +1,78 @@
+---
+// Portfolio Frontend - Index Page
+// Development placeholder for Astro v5 + TypeScript setup
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Portfolio - Development Mode</title>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <main class="max-w-2xl mx-auto p-8 bg-white rounded-lg shadow-lg">
+      <h1 class="text-4xl font-bold text-gray-900 mb-6">
+        🚀 Portfolio Frontend
+      </h1>
+
+      <p class="text-lg text-gray-700 mb-4">
+        Astro v5 + TypeScript frontend is now running in development mode.
+      </p>
+
+      <div class="space-y-4">
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h2 class="text-lg font-semibold text-green-800 mb-2">✅ System Status</h2>
+          <ul class="text-sm text-green-700 space-y-1">
+            <li>• Frontend: Astro v5 + TypeScript (Ready)</li>
+            <li>• Backend: AWS Lambda + FastAPI (Running)</li>
+            <li>• Database: PostgreSQL (Connected)</li>
+            <li>• API Gateway: Nginx (Active)</li>
+          </ul>
+        </div>
+
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 class="text-lg font-semibold text-blue-800 mb-2">🔗 API Endpoints</h2>
+          <ul class="text-sm text-blue-700 space-y-1">
+            <li>• API Gateway: <code>http://localhost:8090</code></li>
+            <li>• Personal Info: <code>http://localhost:8001</code></li>
+            <li>• Skills: <code>http://localhost:8002</code></li>
+            <li>• Experience: <code>http://localhost:8003</code></li>
+            <li>• Projects: <code>http://localhost:8004</code></li>
+          </ul>
+        </div>
+
+        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h2 class="text-lg font-semibold text-yellow-800 mb-2">⚡ Next Steps</h2>
+          <ul class="text-sm text-yellow-700 space-y-1">
+            <li>• Implement Content Layer for data loading</li>
+            <li>• Add Server Islands for dynamic content</li>
+            <li>• Configure Astro Actions for API integration</li>
+            <li>• Build portfolio components and pages</li>
+          </ul>
+        </div>
+      </div>
+
+      <footer class="mt-8 pt-6 border-t border-gray-200">
+        <p class="text-sm text-gray-500 text-center">
+          Portfolio Serverless System - Development Environment
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>
+
+<style>
+  html {
+    font-family: system-ui, sans-serif;
+  }
+
+  code {
+    background-color: #f3f4f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", monospace;
+    font-size: 0.875rem;
+  }
+</style>

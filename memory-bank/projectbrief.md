@@ -23,9 +23,9 @@ Need for a high-performance, scalable portfolio system that demonstrates:
 - Cost-effective serverless deployment patterns
 
 ### Solution Approach
-**Serverless-native architecture** with complete frontend/backend separation:
+**Serverless-native architecture** with complete frontend/server separation:
 - **Frontend**: Astro v5 SSG with Server Islands for optimal performance
-- **Backend**: AWS Lambda microservices with FastAPI for rapid development
+- **Server**: AWS Lambda microservices with FastAPI for rapid development
 - **Database**: Neon PostgreSQL with Git-like branching for environment management
 - **Development**: Docker Compose replicating production architecture locally
 
@@ -39,7 +39,7 @@ Need for a high-performance, scalable portfolio system that demonstrates:
 ## 🏗️ Architecture Philosophy
 
 ### Separation of Concerns
-- **Complete isolation** between frontend and backend systems
+- **Complete isolation** between frontend and server systems
 - **Domain-driven design** with independent microservices per business area
 - **API-first approach** with contract testing between all services
 - **Environment parity** through consistent Docker containerization
@@ -74,7 +74,7 @@ Need for a high-performance, scalable portfolio system that demonstrates:
 - [ ] Development environment configuration
 - [ ] Project structure initialization
 
-### Phase 2: Backend Development
+### Phase 2: Server Development
 **Serverless API Implementation**
 - [ ] AWS Lambda + FastAPI microservices
 - [ ] Neon PostgreSQL integration with branching
@@ -85,7 +85,7 @@ Need for a high-performance, scalable portfolio system that demonstrates:
 **Modern Web Application**
 - [ ] Astro v5 with Content Layer and Server Islands
 - [ ] TypeScript strict mode implementation
-- [ ] Integration with backend APIs
+- [ ] Integration with server APIs
 - [ ] Performance optimization and testing
 
 ### Phase 4: Integration & Deployment

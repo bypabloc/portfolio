@@ -72,12 +72,12 @@ Puerto: 4321
 Features:
   - Content Layer con type-safety
   - Server Islands para contenido dinámico
-  - Astro Actions para backend calls
+  - Astro Actions para server calls
   - Hot reload habilitado
   - TypeScript strict mode
 ```
 
-### Backend Containers (AWS Lambda Simulation)
+### Server Containers (AWS Lambda Simulation)
 ```yaml
 Servicios Lambda:
   personal-info-lambda:
@@ -199,22 +199,22 @@ python scripts/run.py setup --action=restart --services=db --env=local
 python scripts/run.py setup --action=down --services=db --env=local
 ```
 
-### Funciones Lambda (Microservicios Backend)
+### Funciones Lambda (Microservicios Server)
 ```bash
 # Levantar todas las funciones Lambda
-python scripts/run.py setup --action=up --services=backend --env=local --verbose
+python scripts/run.py setup --action=up --services=server --env=local --verbose
 
 # Función personal-info únicamente
-python scripts/run.py setup --action=up --services=backend --backend-services=personal-info --env=local
+python scripts/run.py setup --action=up --services=server --server-services=personal-info --env=local
 
 # Función skills únicamente
-python scripts/run.py setup --action=up --services=backend --backend-services=skills --env=local
+python scripts/run.py setup --action=up --services=server --server-services=skills --env=local
 
 # Experience + Projects específicamente
-python scripts/run.py setup --action=up --services=backend --backend-services=experience,projects --env=local
+python scripts/run.py setup --action=up --services=server --server-services=experience,projects --env=local
 
-# Todas las funciones backend
-python scripts/run.py setup --action=up --services=backend --backend-services=all --env=local
+# Todas las funciones server
+python scripts/run.py setup --action=up --services=server --server-services=all --env=local
 ```
 
 ### Frontend (Astro v5)
@@ -234,8 +234,8 @@ python scripts/run.py setup --action=up --services=frontend --env=local --build
 # Levantar solo el API Gateway
 python scripts/run.py setup --action=up --services=gateway --env=local --verbose
 
-# Gateway con todos los backends
-python scripts/run.py setup --action=up --services=gateway,backend --env=local
+# Gateway con todos los servers
+python scripts/run.py setup --action=up --services=gateway,server --env=local
 ```
 
 
@@ -273,7 +273,7 @@ NODE_ENV=development
 ASTRO_PORT=4321
 API_BASE_URL=http://localhost:8080
 
-# Backend (Lambda Functions)
+# Server (Lambda Functions)
 PERSONAL_INFO_API_URL=http://localhost:8001
 SKILLS_API_URL=http://localhost:8002
 EXPERIENCE_API_URL=http://localhost:8003
@@ -379,19 +379,19 @@ Capacidades:
 ### Routing de Microservicios
 ```nginx
 # proxy/nginx.conf
-upstream personal_info_backend {
+upstream personal_info_server {
     server personal-info-lambda:8080 max_fails=3 fail_timeout=30s;
 }
 
-upstream skills_backend {
+upstream skills_server {
     server skills-lambda:8080 max_fails=3 fail_timeout=30s;
 }
 
-upstream experience_backend {
+upstream experience_server {
     server experience-lambda:8080 max_fails=3 fail_timeout=30s;
 }
 
-upstream projects_backend {
+upstream projects_server {
     server projects-lambda:8080 max_fails=3 fail_timeout=30s;
 }
 
@@ -408,7 +408,7 @@ server {
 
     # Personal Info API
     location /api/personal-info {
-        proxy_pass http://personal_info_backend/2015-03-31/functions/function/invocations;
+        proxy_pass http://personal_info_server/2015-03-31/functions/function/invocations;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Content-Type application/json;
@@ -416,7 +416,7 @@ server {
 
     # Skills API
     location /api/skills {
-        proxy_pass http://skills_backend/2015-03-31/functions/function/invocations;
+        proxy_pass http://skills_server/2015-03-31/functions/function/invocations;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Content-Type application/json;
@@ -424,7 +424,7 @@ server {
 
     # Experience API
     location /api/experience {
-        proxy_pass http://experience_backend/2015-03-31/functions/function/invocations;
+        proxy_pass http://experience_server/2015-03-31/functions/function/invocations;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Content-Type application/json;
@@ -432,7 +432,7 @@ server {
 
     # Projects API
     location /api/projects {
-        proxy_pass http://projects_backend/2015-03-31/functions/function/invocations;
+        proxy_pass http://projects_server/2015-03-31/functions/function/invocations;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Content-Type application/json;
@@ -510,7 +510,7 @@ python scripts/run.py setup --action=up --env=test --build
 python scripts/run.py setup --action=up --services=backend --backend-services=personal-info --env=test
 
 # Integration testing con base de datos
-python scripts/run.py setup --action=up --services=db,backend --env=test
+python scripts/run.py setup --action=up --services=db,server --env=test
 
 # Performance testing local
 python scripts/run.py setup --action=up --env=local
@@ -672,13 +672,13 @@ python scripts/run.py setup --action=up --env=local --follow-logs
 # Database: localhost:5432
 ```
 
-### Desarrollo Backend Only
+### Desarrollo Server Only
 ```bash
-# Solo backend + database
-python scripts/run.py setup --action=up --services=backend,db --env=local
+# Solo server + database
+python scripts/run.py setup --action=up --services=server,db --env=local
 
 # Desarrollo de un servicio específico
-python scripts/run.py setup --action=up --services=backend --backend-services=personal-info --env=local
+python scripts/run.py setup --action=up --services=server --server-services=personal-info --env=local
 ```
 
 ### Frontend Development

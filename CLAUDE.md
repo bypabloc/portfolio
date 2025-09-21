@@ -51,17 +51,17 @@ projectbrief.md → productContext.md ↘
 This is a **documentation repository** for a modern serverless portfolio system architecture. The repository contains comprehensive implementation guides rather than actual code. The project documents a full-stack serverless portfolio system with:
 
 - **Frontend**: Astro v5 with TypeScript (SSG)
-- **Backend**: AWS Lambda + FastAPI + Python 3.12
+- **Server**: AWS Lambda + FastAPI + Python 3.12
 - **Database**: Neon PostgreSQL (serverless)
 - **Infrastructure**: Docker Compose for local development
 - **Testing**: TDD with Vitest + pytest
 
 ## Architecture Philosophy
 
-The documented system follows a **complete separation** between frontend and backend:
+The documented system follows a **complete separation** between frontend and server:
 
-- Frontend (Astro v5) consumes backend APIs via HTTP
-- Backend (FastAPI Lambda functions) are completely independent microservices
+- Frontend (Astro v5) consumes server APIs via HTTP
+- Server (FastAPI Lambda functions) are completely independent microservices
 - Database (Neon PostgreSQL) uses Git-like branching for environments
 - Local development replicates production architecture via Docker
 
@@ -76,7 +76,7 @@ The `docs/` directory contains comprehensive implementation guides:
    - Technology stack overview and quick start guide
    - Reading order recommendations for all documentation
 
-2. **`docs/backend.md`** (~42k) - FastAPI + AWS Lambda implementation
+2. **`docs/server.md`** (~42k) - FastAPI + AWS Lambda implementation
    - Mangum adapter for Lambda integration
    - Pydantic models for type safety
    - AsyncPG optimized for serverless
@@ -95,13 +95,13 @@ The `docs/` directory contains comprehensive implementation guides:
 5. **`docs/frontend.md`** (~47k) - Astro v5 complete implementation
    - Content Layer for data loading
    - Server Islands for dynamic content
-   - Astro Actions for type-safe backend calls
+   - Astro Actions for type-safe server calls
    - Strict TypeScript enforcement
 
 6. **`docs/testing.md`** (~36k) - TDD strategy and implementation
    - Red-Green-Refactor cycles
    - Vitest + Container API for frontend
-   - pytest + moto + LocalStack for backend
+   - pytest + moto + LocalStack for server
    - Contract testing between services
 
 ### Memory Bank Context Files (`memory-bank/` directory)
@@ -145,7 +145,7 @@ Complete 6-file context management system for persistent memory across Claude Co
 - **Mandatory Red-Green-Refactor cycle** for all features
 - **TypeScript strict mode** required for frontend
 - **80%+ test coverage** for all components
-- **Contract testing** between frontend and backend APIs
+- **Contract testing** between frontend and server APIs
 
 ### Technology Stack Commands
 
@@ -161,7 +161,7 @@ npm run test:e2e          # Playwright E2E tests
 npx astro check           # TypeScript validation
 ```
 
-**Backend Development (when implemented):**
+**Server Development (when implemented):**
 
 ```bash
 python -m venv venv && source venv/bin/activate

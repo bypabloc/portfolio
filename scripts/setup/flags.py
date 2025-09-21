@@ -21,7 +21,7 @@ def flag(flags_dict):
     # Definir flags permitidas
     allowed_flags = [
         'env',                   # local|test|dev|prod
-        'services',              # app|server|db|gateway|all
+        'services',              # website|server|db|gateway|all
         'action',                # up|down|restart|status|logs|clean
         'build',                 # forzar rebuild de imágenes
         'detach',                # ejecutar en background
@@ -59,7 +59,7 @@ def flag(flags_dict):
             f"Valores válidos: {', '.join(valid_envs)}"
         )
 
-    valid_services = ['app', 'server', 'db', 'gateway', 'all']
+    valid_services = ['website', 'server', 'db', 'gateway', 'all']
     services_list = [s.strip() for s in flags_dict['services'].split(',') if s.strip()]
     for service in services_list:
         if service not in valid_services:
@@ -118,7 +118,7 @@ def flag(flags_dict):
         print(f"  ⚡ Acción: {flags_dict['action']}")
 
         if 'all' in services_list:
-            print(f"  🏗️  Servicios: Todos (app, server, db, gateway)")
+            print(f"  🏗️  Servicios: Todos (website, server, db, gateway)")
         else:
             print(f"  🏗️  Servicios: {', '.join(services_list)}")
 

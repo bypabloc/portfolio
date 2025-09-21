@@ -19,25 +19,25 @@ services:
           memory: 512M
     restart: always
 
-  # Neon Proxy - Production configuration
-  neon-proxy:
-    environment:
-      - NODE_ENV=production
-      - LOG_LEVEL=error
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-        reservations:
-          memory: 128M
-    restart: always
+  # Neon Proxy - Production configuration (disabled - not critical for development)
+  # neon-proxy:
+  #   environment:
+  #     - NODE_ENV=production
+  #     - LOG_LEVEL=error
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #       reservations:
+  #         memory: 128M
+  #   restart: always
 
-  # Personal Info Service - Production environment
-  personal-info-service:
+  # Personal Info Lambda - Production environment
+  personal-info-lambda:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_prod
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
       - SERVICE_NAME=personal-info
       - LOG_LEVEL=error
       - HOT_RELOAD=false
@@ -52,12 +52,12 @@ services:
           memory: 256M
     restart: always
 
-  # Experience Service - Production environment
-  experience-service:
+  # Experience Lambda - Production environment
+  experience-lambda:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_prod
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
       - SERVICE_NAME=experience
       - LOG_LEVEL=error
       - HOT_RELOAD=false
@@ -72,12 +72,12 @@ services:
           memory: 256M
     restart: always
 
-  # Projects Service - Production environment
-  projects-service:
+  # Projects Lambda - Production environment
+  projects-lambda:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_prod
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
       - SERVICE_NAME=projects
       - LOG_LEVEL=error
       - HOT_RELOAD=false
@@ -92,12 +92,12 @@ services:
           memory: 256M
     restart: always
 
-  # Skills Service - Production environment
-  skills-service:
+  # Skills Lambda - Production environment
+  skills-lambda:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@neon-proxy:5433/portfolio_prod
+      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_prod
       - SERVICE_NAME=skills
       - LOG_LEVEL=error
       - HOT_RELOAD=false
@@ -125,8 +125,8 @@ services:
           memory: 128M
     restart: always
 
-  # Frontend App - Production environment
-  portfolio-frontend:
+  # Website - Production environment
+  portfolio-website:
     environment:
       - NODE_ENV=production
       - ASTRO_PORT=4321

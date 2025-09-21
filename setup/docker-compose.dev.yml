@@ -18,8 +18,8 @@ services:
   #     - NODE_ENV=development
   #     - LOG_LEVEL=info
 
-  # Personal Info Service - Development environment
-  personal-info-service:
+  # Personal Info Lambda - Development environment
+  personal-info-lambda:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
@@ -32,8 +32,8 @@ services:
     volumes:
       - ./server/personal-info/src:/app/src:ro
 
-  # Experience Service - Development environment
-  experience-service:
+  # Experience Lambda - Development environment
+  experience-lambda:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
@@ -46,8 +46,8 @@ services:
     volumes:
       - ./server/experience/src:/app/src:ro
 
-  # Projects Service - Development environment
-  projects-service:
+  # Projects Lambda - Development environment
+  projects-lambda:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
@@ -60,8 +60,8 @@ services:
     volumes:
       - ./server/projects/src:/app/src:ro
 
-  # Skills Service - Development environment
-  skills-service:
+  # Skills Lambda - Development environment
+  skills-lambda:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_dev
@@ -82,8 +82,8 @@ services:
     volumes:
       - ./proxy/logs:/var/log/nginx
 
-  # Frontend App - Development environment
-  portfolio-frontend:
+  # Website - Development environment
+  portfolio-website:
     environment:
       - NODE_ENV=development
       - ASTRO_PORT=4321
@@ -93,8 +93,8 @@ services:
       - LOG_LEVEL=info
       - PROFILING_ENABLED=true
     volumes:
-      - ./app/src:/app/src:ro
-      - ./app/public:/app/public:ro
+      - ../website/src:/app/src:ro
+      - ../website/public:/app/public:ro
 
   # Development monitoring
   dev-monitor:

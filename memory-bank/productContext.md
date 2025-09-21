@@ -93,7 +93,7 @@ Create a **modern, high-performance serverless portfolio system** that showcases
 - [ ] Define architecture patterns and conventions
 - [ ] Set up development environment and tooling
 
-### Phase 2: Backend Implementation
+### Phase 2: Server Implementation
 - [ ] AWS Lambda + FastAPI microservices
 - [ ] Neon PostgreSQL integration with branching
 - [ ] Docker containerization for local development
@@ -102,7 +102,7 @@ Create a **modern, high-performance serverless portfolio system** that showcases
 ### Phase 3: Frontend Development
 - [ ] Astro v5 with Content Layer and Server Islands
 - [ ] TypeScript strict mode implementation
-- [ ] Integration with backend APIs
+- [ ] Integration with server APIs
 - [ ] Performance optimization and testing
 
 ### Phase 4: Integration & Deployment

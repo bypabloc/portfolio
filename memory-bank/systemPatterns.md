@@ -7,7 +7,7 @@
 ## 🏗️ Core Architectural Principles
 
 ### Separation of Concerns
-- **Complete Frontend/Backend Separation**: Frontend consumes backend via HTTP APIs only
+- **Complete Frontend/Server Separation**: Frontend consumes server via HTTP APIs only
 - **Domain-Driven Design**: Clear boundaries between business domains (personal-info, experience, projects, skills)
 - **Single Responsibility**: Each Lambda function handles one specific domain
 - **API-First Design**: Contract definition before implementation
@@ -26,13 +26,13 @@ portfolio/
 ├── frontend/                    # Astro v5 SSG application
 │   ├── src/
 │   │   ├── content/            # Content Layer definitions
-│   │   ├── actions/            # Astro Actions (type-safe backend calls)
+│   │   ├── actions/            # Astro Actions (type-safe server calls)
 │   │   ├── islands/            # Server Islands components
 │   │   ├── components/         # Reusable UI components
 │   │   └── pages/              # Route pages
 │   ├── astro.config.ts         # Astro configuration
 │   └── tsconfig.json           # TypeScript strict configuration
-├── backend/                     # AWS Lambda microservices
+├── server/                     # AWS Lambda microservices
 │   ├── personal-info/          # Personal information service
 │   ├── experience/             # Professional experience service
 │   ├── projects/               # Project portfolio service
@@ -40,7 +40,7 @@ portfolio/
 │   └── shared/                 # Common utilities and types
 ├── docs/                       # Technical documentation
 │   ├── readme.md              # Project overview
-│   ├── backend.md             # Backend implementation guide
+│   ├── server.md             # Server implementation guide
 │   ├── frontend.md            # Frontend implementation guide
 │   ├── db.md                  # Database integration guide
 │   ├── docker.md              # Local development guide
@@ -59,7 +59,7 @@ portfolio/
 
 ### Domain Service Structure
 ```
-backend/domain-name/
+server/domain-name/
 ├── src/
 │   ├── main.py                # Lambda handler entry point
 │   ├── models/                # Pydantic data models
@@ -78,7 +78,7 @@ backend/domain-name/
 
 ## 🎯 Design Patterns & Conventions
 
-### Backend Patterns (Python + FastAPI)
+### Server Patterns (Python + FastAPI)
 
 #### Lambda Handler Pattern
 ```python
@@ -225,7 +225,7 @@ const formatExperience = (experience: ExperienceData): string => {
 };
 ```
 
-### Python Standards (Backend)
+### Python Standards (Server)
 - **Type Hints**: All functions must have type annotations
 - **Pydantic Models**: Use for all data validation and serialization
 - **Async/Await**: Prefer async patterns for I/O operations
@@ -285,7 +285,7 @@ describe('formatExperience', () => {
 });
 ```
 
-### Backend Testing Strategy
+### Server Testing Strategy
 ```python
 # Unit Tests with pytest
 import pytest

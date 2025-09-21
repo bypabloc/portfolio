@@ -44,8 +44,8 @@ services:
       - ./proxy/conf.d:/etc/nginx/conf.d:ro
       - ./proxy/logs:/var/log/nginx
 
-  # Frontend App - Local development
-  portfolio-frontend:
+  # Website - Local development
+  portfolio-website:
     environment:
       - NODE_ENV=development
       - ASTRO_PORT=4321
@@ -54,9 +54,9 @@ services:
       - DEBUG_MODE=true
       - LOG_LEVEL=debug
     volumes:
-      - ./app/src:/app/src
-      - ./app/public:/app/public
-      - ./app/tests:/app/tests
+      - ../website/src:/app/src
+      - ../website/public:/app/public
+      - ../website/tests:/app/tests
       - /app/node_modules  # Anonymous volume
     ports:
       - "4321:4321"

@@ -45,7 +45,7 @@
 
 ## 🚀 Next Sprint Planning
 
-### Sprint 2: Backend Foundation (Estimated: 1-2 weeks)
+### Sprint 2: Server Foundation (Estimated: 1-2 weeks)
 - [ ] **Neon PostgreSQL setup** - Account creation and database branching
 - [ ] **AWS Lambda development environment** - SAM CLI and local testing
 - [ ] **FastAPI project structure** - Create first microservice (personal-info)
@@ -56,7 +56,7 @@
 - [ ] **Astro v5 project creation** - Setup with TypeScript strict mode
 - [ ] **Content Layer configuration** - Data loading architecture
 - [ ] **Server Islands implementation** - Dynamic content strategy
-- [ ] **API integration patterns** - Connect to backend Lambda functions
+- [ ] **API integration patterns** - Connect to server Lambda functions
 - [ ] **Basic UI components** - Foundation component library
 
 ### Sprint 4: Integration & Testing (Estimated: 1-2 weeks)
@@ -92,7 +92,7 @@
 2. **Database Branching Strategy**
    - Option A: Feature branches for each major component
    - Option B: Environment branches only (dev/staging/prod)
-   - **Decision needed by**: Before backend development starts
+   - **Decision needed by**: Before server development starts
    - **Impact**: Development workflow and testing strategy
 
 3. **Frontend Deployment Platform**
@@ -128,7 +128,7 @@
 - **Integration Pattern**: Memory bank works best with docs/ folder for detailed info
 
 ### Technical Architecture Clarifications
-- **Complete Separation**: Frontend and backend are fully independent systems
+- **Complete Separation**: Frontend and server are fully independent systems
 - **API-First Design**: All data exchange happens via HTTP APIs
 - **Serverless Optimization**: Cold start performance is critical (<300ms target)
 - **TDD Mandatory**: Red-Green-Refactor cycle must be followed throughout

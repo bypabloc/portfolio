@@ -165,7 +165,7 @@ async def lifespan(app: FastAPI):
 # FastAPI app configuration con SQLModel
 app = FastAPI(
     title="Portfolio API with SQLModel",
-    description="FastAPI + SQLModel + Lambda backend for modern portfolio system",
+    description="FastAPI + SQLModel + Lambda server for modern portfolio system",
     version="1.0.0",
     docs_url="/docs" if os.getenv("ENVIRONMENT") == "dev" else None,
     redoc_url="/redoc" if os.getenv("ENVIRONMENT") == "dev" else None,
@@ -649,7 +649,7 @@ Cada función Lambda tiene ahora una estructura clara:
 ### Construir todas las funciones FastAPI:
 ```bash
 # Desde la raíz del proyecto - construir toda la infraestructura
-python scripts/run.py setup --action=up --services=backend --env=local --verbose
+python scripts/run.py setup --action=up --services=server --env=local --verbose
 
 # Con Docker Compose (usando archivos setup/)
 docker-compose -f server/setup/docker-compose.yml up --build -d

@@ -878,8 +878,20 @@ def main(flags: Dict[str, Any]) -> None:
                 if wait_for_services_health(cmd_parts, compose_services, project_path, 60, verbose):
                     print("🎉 Todos los servicios están operativos")
 
-                    # Configurar LocalStack API Gateway si está presente
-                    if 'localstack' in [s.lower() for s in compose_services] or 'all' in services_list:
+                    # Configurar LocalStack API Gateway solo si está realmente corriendo
+                    localstack_running = False
+                    try:
+                        result = subprocess.run(
+                            ["docker", "ps", "--format", "{{.Names}}", "--filter", "name=localstack"],
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                        localstack_running = "localstack" in result.stdout
+                    except:
+                        localstack_running = False
+
+                    if localstack_running and ('localstack' in [s.lower() for s in compose_services] or 'all' in services_list):
                         if verbose:
                             print("\n🌐 Configurando LocalStack API Gateway...")
 
@@ -887,11 +899,16 @@ def main(flags: Dict[str, Any]) -> None:
                             print("✅ LocalStack API Gateway configurado exitosamente")
                         else:
                             print("⚠️  LocalStack API Gateway no pudo ser configurado completamente")
+                    elif verbose and 'all' in services_list:
+                        print("ℹ️  LocalStack no está habilitado - saltando configuración")
                 else:
                     print("⚠️  Algunos servicios pueden no estar completamente listos")
 
                 # Mostrar estado
                 show_services_status(cmd_parts, project_path, verbose)
+
+                # Mostrar URLs disponibles del sistema
+                show_available_urls(verbose)
 
                 # Seguir logs si se solicitó
                 if follow_logs:
@@ -1310,3 +1327,386 @@ def setup_localstack_api_gateway(project_path: str, verbose: bool = False) -> bo
             print(f"❌ Error desplegando API Gateway: {e}")
 
     return success_count > 0
+
+
+def get_running_services():
+    """
+    Obtiene información dinámica de los servicios que están corriendo.
+
+    Returns:
+        Dict: Diccionario con información de servicios activos
+    """
+    services = {}
+
+    try:
+        # Obtener información de contenedores corriendo
+        result = subprocess.run(
+            ["docker", "ps", "--format", "json"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    try:
+                        container = json.loads(line)
+                        name = container.get('Names', '')
+                        ports = container.get('Ports', '')
+                        status = container.get('Status', '')
+
+                        # Extraer información del puerto
+                        port_info = extract_port_info(ports)
+
+                        # Categorizar servicio
+                        service_info = categorize_service(name, port_info, status)
+                        if service_info:
+                            services[name] = service_info
+
+                    except json.JSONDecodeError:
+                        continue
+
+    except subprocess.TimeoutExpired:
+        pass
+    except Exception:
+        pass
+
+    return services
+
+
+def extract_port_info(ports_str):
+    """
+    Extrae información de puertos de la cadena de puertos de Docker.
+
+    Args:
+        ports_str: String con información de puertos
+
+    Returns:
+        Dict: Información de puertos extraída
+    """
+    import re
+
+    port_info = {'external_ports': [], 'internal_ports': []}
+
+    if not ports_str:
+        return port_info
+
+    # Patrón para extraer puertos: 0.0.0.0:8001->8080/tcp
+    pattern = r'0\.0\.0\.0:(\d+)->(\d+)/'
+    matches = re.findall(pattern, ports_str)
+
+    for external, internal in matches:
+        port_info['external_ports'].append(int(external))
+        port_info['internal_ports'].append(int(internal))
+
+    return port_info
+
+
+def categorize_service(name, port_info, status):
+    """
+    Categoriza un servicio según su nombre y configuración.
+
+    Args:
+        name: Nombre del contenedor
+        port_info: Información de puertos
+        status: Status del contenedor
+
+    Returns:
+        Dict: Información categorizada del servicio
+    """
+    if not port_info['external_ports']:
+        return None
+
+    primary_port = port_info['external_ports'][0]
+    is_healthy = 'healthy' in status.lower()
+
+    # Detectar tipo de servicio por nombre
+    service_type = None
+    icon = "🔧"
+    service_name = name
+    endpoints = []
+
+    if 'website' in name.lower():
+        service_type = 'website'
+        icon = "🎨"
+        service_name = "Website (Astro v5)"
+        endpoints = [
+            ("GET", "/", "Página principal del portfolio"),
+            ("GET", "/favicon.svg", "Favicon del sitio"),
+            ("GET", "/*", "Todas las páginas estáticas")
+        ]
+    elif 'gateway' in name.lower() or 'proxy' in name.lower():
+        service_type = 'gateway'
+        icon = "🚪"
+        service_name = "API Gateway (Nginx)"
+        endpoints = [
+            ("GET", "/health", "Health check del gateway"),
+            ("GET", "/api/*", "Endpoints consolidados de microservicios"),
+            ("POST", "/api/*", "Operaciones de escritura consolidadas")
+        ]
+    elif 'personal-info' in name.lower():
+        service_type = 'lambda'
+        icon = "👤"
+        service_name = "Personal Info Service"
+        endpoints = get_fastapi_endpoints('personal-info')
+    elif 'skills' in name.lower():
+        service_type = 'lambda'
+        icon = "🎯"
+        service_name = "Skills Service"
+        endpoints = get_fastapi_endpoints('skills')
+    elif 'experience' in name.lower():
+        service_type = 'lambda'
+        icon = "💼"
+        service_name = "Experience Service"
+        endpoints = get_fastapi_endpoints('experience')
+    elif 'projects' in name.lower():
+        service_type = 'lambda'
+        icon = "📂"
+        service_name = "Projects Service"
+        endpoints = get_fastapi_endpoints('projects')
+    elif 'db' in name.lower() or 'postgres' in name.lower():
+        service_type = 'database'
+        icon = "🗄️"
+        service_name = "PostgreSQL Database"
+        endpoints = [
+            ("CONNECT", "postgresql://postgres:portfolio_password@localhost:{}/portfolio_local".format(primary_port), "Conexión directa"),
+            ("GUI", "Adminer/pgAdmin", "Interfaz gráfica"),
+            ("CLI", "psql", "Cliente de línea de comandos")
+        ]
+    else:
+        service_type = 'other'
+        icon = "⚙️"
+        service_name = name.replace('-', ' ').title()
+        endpoints = [("GET", "/health", "Health check")]
+
+    return {
+        'type': service_type,
+        'icon': icon,
+        'name': service_name,
+        'port': primary_port,
+        'all_ports': port_info['external_ports'],
+        'healthy': is_healthy,
+        'endpoints': endpoints,
+        'container_name': name
+    }
+
+
+def get_fastapi_endpoints(service_name):
+    """
+    Genera endpoints estándar para servicios FastAPI.
+
+    Args:
+        service_name: Nombre del servicio
+
+    Returns:
+        List: Lista de tuplas (method, endpoint, description)
+    """
+    resource = service_name.replace('-', '_')
+
+    endpoints = [
+        ("GET", "/health", "Health check"),
+        ("GET", "/docs", "FastAPI Swagger docs"),
+        ("GET", "/redoc", "FastAPI ReDoc"),
+        ("GET", f"/{resource}", f"Obtener {service_name}"),
+        ("POST", f"/{resource}", f"Crear {service_name}"),
+        ("GET", f"/{resource}/{{id}}", f"Obtener {service_name} específico"),
+        ("PUT", f"/{resource}/{{id}}", f"Actualizar {service_name}"),
+        ("DELETE", f"/{resource}/{{id}}", f"Eliminar {service_name}")
+    ]
+
+    return endpoints
+
+
+def show_available_urls(verbose: bool = False):
+    """
+    Muestra dinámicamente las URLs disponibles basándose en servicios corriendo.
+
+    Args:
+        verbose: Mostrar información detallada
+    """
+    print("\n" + "="*80)
+    print("🌐 URLs DISPONIBLES DEL SISTEMA (DINÁMICO)")
+    print("="*80)
+
+    # Obtener servicios corriendo dinámicamente
+    services = get_running_services()
+
+    if not services:
+        print("\n❌ No se detectaron servicios corriendo")
+        print("💡 Ejecuta: python scripts/run.py setup --action=up --services=all --env=local")
+        print("="*80 + "\n")
+        return
+
+    # Agrupar servicios por tipo
+    service_types = {
+        'website': [],
+        'gateway': [],
+        'lambda': [],
+        'database': [],
+        'other': []
+    }
+
+    for name, info in services.items():
+        service_types[info['type']].append((name, info))
+
+    # Mostrar servicios por categoría
+    total_services = 0
+
+    # Website
+    if service_types['website']:
+        print(f"\n🎨 WEBSITE")
+        for name, info in service_types['website']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # API Gateway
+    if service_types['gateway']:
+        print(f"\n🚪 API GATEWAY")
+        for name, info in service_types['gateway']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Lambda Microservices
+    if service_types['lambda']:
+        print(f"\n🔧 MICROSERVICIOS LAMBDA ({len(service_types['lambda'])} servicios)")
+        for name, info in service_types['lambda']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Database
+    if service_types['database']:
+        print(f"\n🗄️ DATABASE")
+        for name, info in service_types['database']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Other services
+    if service_types['other']:
+        print(f"\n⚙️ OTROS SERVICIOS")
+        for name, info in service_types['other']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Testing commands dinámicos
+    show_dynamic_testing_commands(services)
+
+    # Summary
+    print("\n" + "="*80)
+    print(f"✅ Sistema Portfolio: {total_services} servicios operativos")
+
+    # Detectar tecnologías dinámicamente
+    tech_summary = detect_tech_stack(services)
+    for tech in tech_summary:
+        print(f"{tech}")
+
+    print("="*80 + "\n")
+
+
+def show_service_urls(service_info, verbose=False):
+    """
+    Muestra las URLs de un servicio específico.
+
+    Args:
+        service_info: Información del servicio
+        verbose: Mostrar información detallada
+    """
+    icon = service_info['icon']
+    name = service_info['name']
+    port = service_info['port']
+    healthy_status = "✅" if service_info['healthy'] else "⚠️"
+
+    # Determinar base URL
+    if service_info['type'] == 'database':
+        base_url = f"localhost:{port}"
+    else:
+        base_url = f"http://localhost:{port}"
+
+    print(f"\n{icon} {name} (Puerto {port}) {healthy_status}")
+    print(f"└── {base_url}")
+
+    # Mostrar endpoints
+    for i, (method, endpoint, description) in enumerate(service_info['endpoints']):
+        is_last = (i == len(service_info['endpoints']) - 1)
+        prefix = "└──" if is_last else "├──"
+
+        if service_info['type'] == 'database':
+            print(f"    {prefix} {method:<8} {endpoint:<30} # {description}")
+        else:
+            full_endpoint = endpoint if endpoint.startswith('http') else endpoint
+            print(f"    {prefix} {method:<6} {full_endpoint:<25} # {description}")
+
+    # Mostrar puertos adicionales si hay
+    if len(service_info['all_ports']) > 1:
+        additional_ports = [p for p in service_info['all_ports'] if p != port]
+        if additional_ports:
+            print(f"    └── Puertos adicionales: {', '.join(map(str, additional_ports))}")
+
+
+def show_dynamic_testing_commands(services):
+    """
+    Muestra comandos de testing basados en servicios corriendo.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    print(f"\n🧪 COMANDOS DE TESTING DINÁMICOS")
+
+    # Health checks
+    health_commands = []
+    for name, info in services.items():
+        if info['type'] in ['website', 'gateway', 'lambda']:
+            if info['type'] == 'website':
+                health_commands.append(f"curl http://localhost:{info['port']}")
+            else:
+                health_commands.append(f"curl http://localhost:{info['port']}/health")
+
+    if health_commands:
+        print("# Health checks rápidos")
+        for cmd in health_commands:
+            print(cmd)
+        print()
+
+    # FastAPI docs
+    docs_commands = []
+    for name, info in services.items():
+        if info['type'] == 'lambda':
+            docs_commands.append(f"http://localhost:{info['port']}/docs         # {info['name']} Swagger")
+
+    if docs_commands:
+        print("# FastAPI documentación interactiva")
+        for cmd in docs_commands:
+            print(cmd)
+
+
+def detect_tech_stack(services):
+    """
+    Detecta tecnologías en uso basándose en servicios corriendo.
+
+    Args:
+        services: Diccionario de servicios activos
+
+    Returns:
+        List: Lista de strings describiendo el tech stack
+    """
+    tech_stack = []
+
+    # Contar servicios por tipo
+    website_count = sum(1 for s in services.values() if s['type'] == 'website')
+    lambda_count = sum(1 for s in services.values() if s['type'] == 'lambda')
+    gateway_count = sum(1 for s in services.values() if s['type'] == 'gateway')
+    db_count = sum(1 for s in services.values() if s['type'] == 'database')
+
+    if website_count > 0:
+        tech_stack.append("🚀 Website: Astro v5 + TypeScript + Tailwind CSS")
+
+    if lambda_count > 0:
+        tech_stack.append(f"⚡ Server: {lambda_count} microservicios FastAPI + SQLModel")
+
+    if db_count > 0:
+        tech_stack.append("🗄️ Database: PostgreSQL 17 con branching")
+
+    if gateway_count > 0:
+        tech_stack.append("🌐 Gateway: Nginx reverse proxy consolidado")
+
+    return tech_stack

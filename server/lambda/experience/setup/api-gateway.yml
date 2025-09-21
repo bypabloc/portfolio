@@ -187,7 +187,7 @@ testing:
           "start_date": "2023-01-01",
           "end_date": null,
           "is_current": true,
-          "description": "Leading backend development",
+          "description": "Leading server development",
           "technologies": ["Python", "FastAPI", "PostgreSQL", "AWS"]
         }
       expected_status: 201

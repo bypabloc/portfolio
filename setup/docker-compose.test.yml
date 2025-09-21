@@ -9,16 +9,11 @@ services:
       - POSTGRES_DB=portfolio_test
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=portfolio_password
-      - PGDATA=/var/lib/postgresql/data/pgdata
     command: ["postgres", "-c", "log_statement=none", "-c", "log_duration=off"]
     volumes:
-      # Solo mantener logs y config, sin el volumen de datos
-      - postgres-logs:/var/log/postgresql
+      # Configuración básica para testing
       - ./database/init-portfolio-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - ./database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-    tmpfs:
-      # Base de datos en memoria para testing rápido - usar ruta diferente para evitar conflicto
-      - /var/lib/postgresql/data/pgdata:noexec,nosuid,size=512m
 
   # Neon Proxy - Test configuration (disabled - not critical for development)
   # neon-proxy:
@@ -26,61 +21,33 @@ services:
   #     - NODE_ENV=test
   #     - LOG_LEVEL=warn
 
-  # Personal Info Service - Test environment
-  personal-info-service:
+  # Personal Info Lambda - Test environment
+  personal-info-lambda:
     environment:
-      - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - SERVICE_NAME=personal-info
       - LOG_LEVEL=warn
-      - HOT_RELOAD=false
-      - DEBUG_MODE=false
-      - TEST_MODE=true
-    volumes:
-      - ./server/personal-info/tests:/app/tests:ro
 
-  # Experience Service - Test environment
-  experience-service:
+  # Experience Lambda - Test environment
+  experience-lambda:
     environment:
-      - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - SERVICE_NAME=experience
       - LOG_LEVEL=warn
-      - HOT_RELOAD=false
-      - DEBUG_MODE=false
-      - TEST_MODE=true
-    volumes:
-      - ./server/experience/tests:/app/tests:ro
 
-  # Projects Service - Test environment
-  projects-service:
+  # Projects Lambda - Test environment
+  projects-lambda:
     environment:
-      - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - SERVICE_NAME=projects
       - LOG_LEVEL=warn
-      - HOT_RELOAD=false
-      - DEBUG_MODE=false
-      - TEST_MODE=true
-    volumes:
-      - ./server/projects/tests:/app/tests:ro
 
-  # Skills Service - Test environment
-  skills-service:
+  # Skills Lambda - Test environment
+  skills-lambda:
     environment:
-      - NODE_ENV=test
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_test
-      - SERVICE_NAME=skills
       - LOG_LEVEL=warn
-      - HOT_RELOAD=false
-      - DEBUG_MODE=false
-      - TEST_MODE=true
-    volumes:
-      - ./server/skills/tests:/app/tests:ro
 
   # API Gateway - Test environment
   api-gateway:
@@ -88,8 +55,8 @@ services:
       - NGINX_ENV=test
       - LOG_LEVEL=warn
 
-  # Frontend App - Test environment
-  portfolio-frontend:
+  # Website - Test environment
+  portfolio-website:
     environment:
       - NODE_ENV=test
       - ASTRO_PORT=4321
@@ -99,7 +66,7 @@ services:
       - LOG_LEVEL=warn
       - TEST_MODE=true
     volumes:
-      - ./app/tests:/app/tests:ro
+      - ../website/tests:/app/tests:ro
 
   # Test utilities
   test-runner:

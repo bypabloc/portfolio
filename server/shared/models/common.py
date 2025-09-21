@@ -219,7 +219,7 @@ class SkillCategoryChoices:
     CLOUD = "cloud"
     DEVOPS = "devops"
     FRONTEND = "frontend"
-    BACKEND = "backend"
+    SERVER = "server"
     MOBILE = "mobile"
     DESIGN = "design"
     SOFT_SKILLS = "soft_skills"

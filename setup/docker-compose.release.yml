@@ -110,8 +110,8 @@ services:
         limits:
           memory: 128M
 
-  # Frontend App - Release environment
-  portfolio-frontend:
+  # Website - Release environment
+  portfolio-website:
     environment:
       - NODE_ENV=production
       - ASTRO_PORT=4321

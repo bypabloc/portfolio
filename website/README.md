@@ -16,7 +16,7 @@ El frontend está diseñado como un **SSG (Static Site Generation)** moderno con
 ### Características Principales de Astro v5
 - ✅ **Content Layer**: Sistema unificado de carga de datos desde cualquier fuente
 - ✅ **Server Islands**: Mezcla perfecta de contenido estático y dinámico
-- ✅ **Astro Actions**: Funciones backend type-safe llamadas desde el frontend
+- ✅ **Astro Actions**: Funciones server type-safe llamadas desde el frontend
 - ✅ **TypeScript Strict Mode**: Tipos estrictos obligatorios
 - ✅ **Performance Optimizado**: Build times 40% más rápidos que v4
 
@@ -44,7 +44,7 @@ frontend/
 │   ├── content/              # Content Layer definitions
 │   │   ├── config.ts         # Content collections schema
 │   │   └── experience/       # Experience markdown/data
-│   ├── actions/              # Astro Actions (backend calls)
+│   ├── actions/              # Astro Actions (server calls)
 │   │   ├── index.ts          # Action definitions
 │   │   └── types.ts          # Shared types
 │   ├── islands/              # Server Islands components

@@ -73,7 +73,7 @@ pnpm format              # Prettier formatting
 pnpm type-check          # TypeScript type checking
 ```
 
-## 🐍 Backend Technology Stack
+## 🐍 Server Technology Stack
 
 ### Core Framework & Runtime
 ```python
@@ -92,7 +92,7 @@ AWS Integration:
   - Adapter: Mangum for FastAPI → Lambda integration
 ```
 
-### Backend Dependencies & Libraries
+### Server Dependencies & Libraries
 ```python
 # Core Dependencies (requirements.txt)
 fastapi==0.115.*
@@ -113,7 +113,7 @@ mypy==1.11.*
 ruff==0.6.*
 ```
 
-### Backend Development Commands
+### Server Development Commands
 ```bash
 # Environment Setup
 python -m venv venv
@@ -222,25 +222,25 @@ alembic downgrade -1         # Rollback one migration
 version: '3.8'
 services:
   personal-info:
-    build: ./backend/personal-info
+    build: ./server/personal-info
     ports: ["8001:8080"]
     environment:
       - DATABASE_URL=${PERSONAL_INFO_DB_URL}
 
   experience:
-    build: ./backend/experience
+    build: ./server/experience
     ports: ["8002:8080"]
     environment:
       - DATABASE_URL=${EXPERIENCE_DB_URL}
 
   projects:
-    build: ./backend/projects
+    build: ./server/projects
     ports: ["8003:8080"]
     environment:
       - DATABASE_URL=${PROJECTS_DB_URL}
 
   skills:
-    build: ./backend/skills
+    build: ./server/skills
     ports: ["8004:8080"]
     environment:
       - DATABASE_URL=${SKILLS_DB_URL}
@@ -369,7 +369,7 @@ export default defineConfig({
 });
 ```
 
-### Backend Testing
+### Server Testing
 ```python
 # pytest Configuration (pyproject.toml)
 [tool.pytest.ini_options]
@@ -480,7 +480,7 @@ Frontend Metrics:
   - Web Vitals tracking (LCP, FID, CLS)
   - Bundle analyzer for optimization
 
-Backend Metrics:
+Server Metrics:
   - Lambda duration and memory usage
   - Database connection metrics
   - API response time tracking
@@ -514,7 +514,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  backend-tests:
+  server-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -532,7 +532,7 @@ Frontend Deployment:
   - Platform: AWS CloudFront + S3 (unified AWS stack)
   - Features: Global CDN, auto-deployment from Git, serverless distribution, unified AWS infrastructure
 
-Backend Deployment:
+Server Deployment:
   - Primary: AWS Lambda via SAM CLI
   - Staging: Separate AWS account/region
   - Production: Blue-green deployment strategy

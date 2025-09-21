@@ -168,7 +168,7 @@ testing:
       body: |
         {
           "name": "Python",
-          "category": "backend",
+          "category": "server",
           "level": 5,
           "years_experience": 8,
           "description": "Advanced Python development"

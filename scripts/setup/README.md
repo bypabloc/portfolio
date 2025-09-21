@@ -398,7 +398,7 @@ python scripts/run.py setup --action=logs --services=server --server-services=pe
 ### Métricas de desarrollo:
 - Response times de APIs
 - Database connection status
-- Frontend build status
+- Website build status
 - Memory usage por servicio
 
 ## ✅ Estado Actual Verificado (2025-09-21)
