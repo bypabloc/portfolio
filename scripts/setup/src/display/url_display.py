@@ -1,0 +1,350 @@
+"""
+Visualización de URLs disponibles y comandos de testing dinámicos.
+"""
+
+import subprocess
+import json
+from typing import Dict, List, Any, Tuple
+
+
+def show_available_urls(verbose: bool = False):
+    """
+    Muestra dinámicamente las URLs disponibles basándose en servicios corriendo.
+
+    Args:
+        verbose: Mostrar información detallada
+    """
+    from .service_info import get_running_services, categorize_services_by_type
+
+    print("\n" + "="*80)
+    print("🌐 URLs DISPONIBLES DEL SISTEMA (DINÁMICO)")
+    print("="*80)
+
+    # Obtener servicios corriendo dinámicamente
+    services = get_running_services()
+
+    if not services:
+        print("\n❌ No se detectaron servicios corriendo")
+        print("💡 Ejecuta: python scripts/run.py setup --action=up --services=all --env=local")
+        print("="*80 + "\n")
+        return
+
+    # Agrupar servicios por tipo
+    service_types = categorize_services_by_type(services)
+
+    # Mostrar servicios por categoría
+    total_services = 0
+
+    # Website
+    if service_types['website']:
+        print(f"\n🎨 WEBSITE")
+        for name, info in service_types['website']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # API Gateway
+    if service_types['gateway']:
+        print(f"\n🚪 API GATEWAY")
+        for name, info in service_types['gateway']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Lambda Microservices
+    if service_types['lambda']:
+        print(f"\n🔧 MICROSERVICIOS LAMBDA ({len(service_types['lambda'])} servicios)")
+        for name, info in service_types['lambda']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Database
+    if service_types['database']:
+        print(f"\n🗄️ DATABASE")
+        for name, info in service_types['database']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Other services
+    if service_types['other']:
+        print(f"\n⚙️ OTROS SERVICIOS")
+        for name, info in service_types['other']:
+            show_service_urls(info, verbose)
+            total_services += 1
+
+    # Testing commands dinámicos
+    show_dynamic_testing_commands(services)
+
+    # Summary
+    print("\n" + "="*80)
+    print(f"✅ Sistema Portfolio: {total_services} servicios operativos")
+
+    # Detectar tecnologías dinámicamente
+    tech_summary = detect_tech_stack(services)
+    for tech in tech_summary:
+        print(f"{tech}")
+
+    print("="*80 + "\n")
+
+
+def show_service_urls(service_info: Dict[str, Any], verbose: bool = False):
+    """
+    Muestra las URLs de un servicio específico.
+
+    Args:
+        service_info: Información del servicio
+        verbose: Mostrar información detallada
+    """
+    icon = service_info['icon']
+    name = service_info['name']
+    port = service_info['port']
+    healthy_status = "✅" if service_info['healthy'] else "⚠️"
+
+    # Determinar base URL
+    if service_info['type'] == 'database':
+        base_url = f"localhost:{port}"
+    else:
+        base_url = f"http://localhost:{port}"
+
+    print(f"\n{icon} {name} (Puerto {port}) {healthy_status}")
+    print(f"└── {base_url}")
+
+    # Mostrar endpoints
+    for i, (method, endpoint, description) in enumerate(service_info['endpoints']):
+        is_last = (i == len(service_info['endpoints']) - 1)
+        prefix = "└──" if is_last else "├──"
+
+        if service_info['type'] == 'database':
+            print(f"    {prefix} {method:<8} {endpoint:<30} # {description}")
+        else:
+            full_endpoint = endpoint if endpoint.startswith('http') else endpoint
+            print(f"    {prefix} {method:<6} {full_endpoint:<25} # {description}")
+
+    # Mostrar puertos adicionales si hay
+    if len(service_info['all_ports']) > 1:
+        additional_ports = [p for p in service_info['all_ports'] if p != port]
+        if additional_ports:
+            print(f"    └── Puertos adicionales: {', '.join(map(str, additional_ports))}")
+
+
+def show_dynamic_testing_commands(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra comandos de testing basados en servicios corriendo.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    print(f"\n🧪 COMANDOS DE TESTING DINÁMICOS")
+
+    # Health checks
+    health_commands = []
+    for name, info in services.items():
+        if info['type'] in ['website', 'gateway', 'lambda']:
+            if info['type'] == 'website':
+                health_commands.append(f"curl http://localhost:{info['port']}")
+            else:
+                health_commands.append(f"curl http://localhost:{info['port']}/health")
+
+    if health_commands:
+        print("# Health checks rápidos")
+        for cmd in health_commands:
+            print(cmd)
+        print()
+
+    # FastAPI docs
+    docs_commands = []
+    for name, info in services.items():
+        if info['type'] == 'lambda':
+            docs_commands.append(f"http://localhost:{info['port']}/docs         # {info['name']} Swagger")
+
+    if docs_commands:
+        print("# FastAPI documentación interactiva")
+        for cmd in docs_commands:
+            print(cmd)
+
+
+def show_consolidated_urls(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra URLs consolidadas del API Gateway si está disponible.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    # Buscar API Gateway
+    gateway_service = None
+    for name, info in services.items():
+        if info['type'] == 'gateway':
+            gateway_service = info
+            break
+
+    if not gateway_service:
+        return
+
+    print(f"\n🌐 URLs CONSOLIDADAS (API Gateway - Puerto {gateway_service['port']})")
+    print("-" * 60)
+
+    gateway_port = gateway_service['port']
+    consolidated_urls = {
+        'health': f"http://localhost:{gateway_port}/health",
+        'personal-info': f"http://localhost:{gateway_port}/api/personal-info",
+        'skills': f"http://localhost:{gateway_port}/api/skills",
+        'experience': f"http://localhost:{gateway_port}/api/experience",
+        'projects': f"http://localhost:{gateway_port}/api/projects"
+    }
+
+    for service, url in consolidated_urls.items():
+        print(f"  {service.title()}: {url}")
+
+
+def detect_tech_stack(services: Dict[str, Dict[str, Any]]) -> List[str]:
+    """
+    Detecta tecnologías en uso basándose en servicios corriendo.
+
+    Args:
+        services: Diccionario de servicios activos
+
+    Returns:
+        List: Lista de strings describiendo el tech stack
+    """
+    tech_stack = []
+
+    # Contar servicios por tipo
+    website_count = sum(1 for s in services.values() if s['type'] == 'website')
+    lambda_count = sum(1 for s in services.values() if s['type'] == 'lambda')
+    gateway_count = sum(1 for s in services.values() if s['type'] == 'gateway')
+    db_count = sum(1 for s in services.values() if s['type'] == 'database')
+
+    if website_count > 0:
+        tech_stack.append("🚀 Website: Astro v5 + TypeScript + Tailwind CSS")
+
+    if lambda_count > 0:
+        tech_stack.append(f"⚡ Server: {lambda_count} microservicios FastAPI + SQLModel")
+
+    if db_count > 0:
+        tech_stack.append("🗄️ Database: PostgreSQL 17 con branching")
+
+    if gateway_count > 0:
+        tech_stack.append("🌐 Gateway: Nginx reverse proxy consolidado")
+
+    return tech_stack
+
+
+def show_quick_access_commands(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra comandos de acceso rápido para servicios.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    print(f"\n⚡ COMANDOS DE ACCESO RÁPIDO")
+    print("-" * 30)
+
+    quick_commands = []
+
+    for name, info in services.items():
+        if info['type'] == 'website':
+            quick_commands.append(f"# Abrir website")
+            quick_commands.append(f"open http://localhost:{info['port']}")
+
+        elif info['type'] == 'gateway':
+            quick_commands.append(f"# Health check del gateway")
+            quick_commands.append(f"curl http://localhost:{info['port']}/health")
+
+        elif info['type'] == 'lambda':
+            service_name = name.replace('-lambda', '').replace('-', '_')
+            quick_commands.append(f"# API {service_name}")
+            quick_commands.append(f"curl http://localhost:{info['port']}/docs")
+
+    # Mostrar solo los más importantes para no saturar
+    for cmd in quick_commands[:8]:  # Limitar a 8 comandos
+        print(cmd)
+
+
+def show_service_discovery_info(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra información de service discovery para desarrollo.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    print(f"\n🔍 SERVICE DISCOVERY")
+    print("-" * 20)
+
+    # Información para conectar servicios entre sí
+    service_map = {}
+
+    for name, info in services.items():
+        if info['type'] in ['lambda', 'gateway', 'database']:
+            service_map[info['type']] = {
+                'name': name,
+                'port': info['port'],
+                'internal_url': f"http://{name}:{info['port']}" if info['type'] != 'database' else f"{name}:{info['port']}"
+            }
+
+    if service_map:
+        print("# Para desarrollo interno (entre contenedores):")
+        for service_type, info in service_map.items():
+            print(f"  {service_type}: {info['internal_url']}")
+
+        print("\n# Para desarrollo externo (desde host):")
+        for service_type, info in service_map.items():
+            external_url = f"http://localhost:{info['port']}" if service_type != 'database' else f"localhost:{info['port']}"
+            print(f"  {service_type}: {external_url}")
+
+
+def show_performance_urls(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra URLs específicas para testing de performance.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    perf_urls = []
+
+    for name, info in services.items():
+        if info['type'] == 'lambda':
+            # URLs de health check para performance testing
+            perf_urls.append(f"http://localhost:{info['port']}/health")
+
+        elif info['type'] == 'gateway':
+            # URLs consolidadas para load testing
+            perf_urls.extend([
+                f"http://localhost:{info['port']}/api/personal-info",
+                f"http://localhost:{info['port']}/api/skills",
+                f"http://localhost:{info['port']}/api/experience",
+                f"http://localhost:{info['port']}/api/projects"
+            ])
+
+    if perf_urls:
+        print(f"\n⚡ URLs PARA PERFORMANCE TESTING")
+        print("-" * 35)
+        print("# Para usar con wrk, ab, o similares:")
+        for url in perf_urls[:6]:  # Limitar para no saturar
+            print(f"  {url}")
+
+        print(f"\n# Ejemplo con curl para latencia:")
+        print(f"  curl -w '@-' -o /dev/null -s {perf_urls[0]} <<< 'time_total: %{{time_total}}\\n'")
+
+
+def show_logs_access_info(services: Dict[str, Dict[str, Any]]):
+    """
+    Muestra información sobre cómo acceder a logs de servicios.
+
+    Args:
+        services: Diccionario de servicios activos
+    """
+    print(f"\n📊 ACCESO A LOGS")
+    print("-" * 15)
+
+    log_commands = []
+
+    for name, info in services.items():
+        container_name = info.get('container_name', name)
+        log_commands.append(f"docker logs {container_name}")
+        log_commands.append(f"docker logs -f {container_name}  # Seguir en tiempo real")
+
+    if log_commands:
+        print("# Logs individuales:")
+        for cmd in log_commands[:6]:  # Mostrar solo algunos ejemplos
+            print(f"  {cmd}")
+
+        print("\n# Logs consolidados:")
+        print("  python scripts/run.py setup --action=logs --follow-logs")
