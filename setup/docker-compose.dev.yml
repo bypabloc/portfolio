@@ -93,8 +93,8 @@ services:
       - LOG_LEVEL=info
       - PROFILING_ENABLED=true
     volumes:
-      - ../website/src:/app/src:ro
-      - ../website/public:/app/public:ro
+      - ../website/src:/website/src:ro
+      - ../website/public:/website/public:ro
 
   # Development monitoring
   dev-monitor:

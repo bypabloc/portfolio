@@ -12,7 +12,7 @@ RUN apk add --no-cache \
     g++
 
 # Set work directory
-WORKDIR /app
+WORKDIR /website
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -32,7 +32,7 @@ RUN pnpm install
 COPY . .
 
 # Change ownership to nodejs user
-RUN chown -R astro:nodejs /app
+RUN chown -R astro:nodejs /website
 
 # Switch to non-root user
 USER astro

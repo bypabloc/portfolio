@@ -207,7 +207,7 @@ services:
   portfolio-website:
     build:
       context: ../website
-      dockerfile: ../setup/app/Dockerfile
+      dockerfile: ../website/Dockerfile
       args:
         - NODE_ENV=development
     container_name: portfolio-website
@@ -225,9 +225,9 @@ services:
       portfolio-network:
         ipv4_address: 172.26.0.40
     volumes:
-      - ../website/src:/app/src
-      - ../website/public:/app/public
-      - /app/node_modules  # Anonymous volume for node_modules
+      - ../website/src:/website/src
+      - ../website/public:/website/public
+      - /website/node_modules  # Anonymous volume for node_modules
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4321"]
       interval: 30s

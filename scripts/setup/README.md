@@ -28,8 +28,8 @@ python scripts/run.py setup --action=status --services=db --env=local
 
 ### Servicios específicos
 ```bash
-# Solo app (Astro v5)
-python scripts/run.py setup --action=up --services=app --env=local --verbose
+# Solo website (Astro v5)
+python scripts/run.py setup --action=up --services=website --env=local --verbose
 
 # Solo server (todos los microservices)
 python scripts/run.py setup --action=up --services=server --env=local --verbose
@@ -92,8 +92,8 @@ python scripts/run.py setup --action=clean --verbose
 
 ## Arquitectura de servicios
 
-### App (Astro v5)
-- **Servicio**: `portfolio-app`
+### Website (Astro v5)
+- **Servicio**: `portfolio-website`
 - **Puerto**: `4321` (Astro dev server)
 - **Features**: Content Layer, Server Islands, Astro Actions
 - **Hot reload**: Habilitado en modo development
@@ -161,7 +161,7 @@ python scripts/run.py setup --action=clean --verbose
 
 **Gestión de entornos:**
 - `--env="local|test|dev|release|prod"` - Entorno a levantar (default: local)
-- `--services="app|server|db|gateway|all"` - Servicios específicos (default: all)
+- `--services="website|server|db|gateway|all"` - Servicios específicos (default: all)
 
 **Operaciones:**
 - `--action="up|down|restart|status|logs|clean"` - Acción a ejecutar (default: up)
@@ -193,7 +193,7 @@ python scripts/run.py setup --env="local" --follow-logs
 ### Gestión de servicios específicos
 ```bash
 # Solo app (Astro)
-python scripts/run.py setup --env="local" --services="app"
+python scripts/run.py setup --env="local" --services="website"
 
 # Solo server microservices
 python scripts/run.py setup --env="local" --services="server"
@@ -201,8 +201,8 @@ python scripts/run.py setup --env="local" --services="server"
 # Solo base de datos
 python scripts/run.py setup --env="local" --services="db"
 
-# App + API Gateway
-python scripts/run.py setup --env="local" --services="app,gateway"
+# Website + API Gateway
+python scripts/run.py setup --env="local" --services="website,gateway"
 ```
 
 ### Microservices server específicos
@@ -266,7 +266,7 @@ python scripts/run.py setup --action="clean" --verbose
 python scripts/run.py setup --env="local" --build --verbose
 
 # Rebuild solo de la app
-python scripts/run.py setup --env="local" --services="app" --build
+python scripts/run.py setup --env="local" --services="website" --build
 ```
 
 ### Para CI/CD y testing
@@ -430,7 +430,7 @@ El sistema está **completamente operativo** con los siguientes servicios confir
 - **Testing local**: `--env="test" --services="server,db"`
 - **Demo/presentación**: `--env="prod" --verbose`
 - **Debug de API**: `--env="local" --services="server" --server-services="personal-info"` o cualquier lambda específica
-- **App only**: `--env="local" --services="app"`
+- **Website only**: `--env="local" --services="website"`
 - **Full stack development**: `--env="local"` (default)
 - **Solo backend + API Gateway**: `--env="local" --services="server,gateway,db"` ✅ **Recomendado para desarrollo API**
 

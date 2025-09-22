@@ -60,10 +60,10 @@ services:
       - DEBUG_MODE=true
       - LOG_LEVEL=debug
     volumes:
-      - ../website/src:/app/src
-      - ../website/public:/app/public
-      - ../website/tests:/app/tests
-      - /app/node_modules  # Anonymous volume
+      - ../website/src:/website/src
+      - ../website/public:/website/public
+      - ../website/tests:/website/tests
+      - /website/node_modules  # Anonymous volume
     ports:
       - "4321:4321"
       - "24678:24678"  # Vite HMR port

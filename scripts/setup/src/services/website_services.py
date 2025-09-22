@@ -13,7 +13,7 @@ def get_website_service_info() -> Dict[str, Any]:
         Dict[str, Any]: Información del servicio website
     """
     return {
-        'compose_name': 'portfolio-app',
+        'compose_name': 'portfolio-website',
         'port': 4321,
         'type': 'website',
         'icon': '🎨',

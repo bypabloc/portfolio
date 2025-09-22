@@ -23,7 +23,7 @@ def get_service_names_for_compose(services_list: List[str],
         if service == 'all':
             return []  # Docker Compose levantará todos por defecto
         elif service == 'app' or service == 'website':
-            compose_services.append('portfolio-app')
+            compose_services.append('portfolio-website')
         elif service == 'server':
             for server_service in server_services_list:
                 compose_services.append(f'{server_service}-lambda')
