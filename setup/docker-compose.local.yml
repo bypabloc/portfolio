@@ -29,8 +29,8 @@ services:
     environment:
       - LOG_LEVEL=debug
       - DEBUG_MODE=true
-    volumes:
-      - ../server/lambda/personal-info:/var/task:ro  # Lambda function code
+    # volumes:
+    #   - ../server/lambda/personal-info:/var/task:ro  # Lambda function code (disabled for Dockerfile testing)
 
   # Skills Lambda - Local development
   skills-lambda:

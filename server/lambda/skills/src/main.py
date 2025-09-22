@@ -5,32 +5,49 @@ Portfolio Serverless System
 Main application factory and route definitions
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Query
-from fastapi.responses import JSONResponse
-from typing import Dict, Any, Optional
-import logging
+# Setup shared imports
+# Navigate: src/ → skills/ → lambda/ → server/ → shared/
+from pathlib import Path
+import sys
+shared = Path(__file__).resolve().parents[3] / 'shared'
+sys.path.insert(0, str(shared))
+
+# Import shared utilities
+from api_core import (
+    # FastAPI core
+    HTTPException,
+    Depends,
+    Query,
+    # App utilities
+    create_fastapi_app,
+    create_success_response,
+    create_error_response,
+    RequestLogger,
+    # Query utilities
+    CommonQuery
+)
+from utils.logger import get_logger
 
 from models import SkillsListResponse, SkillsCategoryResponse
 from repository import SkillRepositoryWrapper
 from service import SkillsService
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Get logger for this service
+logger = get_logger("skills-service")
 
-def create_app() -> FastAPI:
+def create_app():
     """
-    Create and configure FastAPI application
+    Create and configure FastAPI application using shared utilities.
 
     Returns:
         FastAPI: Configured application instance
     """
-    app = FastAPI(
+    app = create_fastapi_app(
         title="Skills Service",
         description="Portfolio Serverless System - Skills Management",
         version="1.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc"
+        service_name="skills-service",
+        debug=True  # Change to False for production
     )
 
     # Dependency injection
@@ -40,33 +57,34 @@ def create_app() -> FastAPI:
     def get_service(repository: SkillRepositoryWrapper = Depends(get_repository)) -> SkillsService:
         return SkillsService(repository)
 
-    @app.get("/", response_model=Dict[str, str])
+    @app.get("/")
     async def root():
         """Root endpoint"""
-        return {
+        return create_success_response({
             "service": "skills",
             "status": "running",
             "version": "1.0.0"
-        }
+        })
 
-    @app.get("/health", response_model=Dict[str, str])
+    @app.get("/health")
     async def health_check():
         """Health check endpoint for container orchestration"""
-        return {
+        return create_success_response({
             "status": "healthy",
             "service": "skills",
             "version": "1.0.0"
-        }
+        })
 
     @app.get("/skills", response_model=SkillsListResponse)
     async def get_skills(
-        category: Optional[str] = Query(None, description="Filter by category"),
-        level: Optional[str] = Query(None, description="Filter by proficiency level"),
-        featured: Optional[bool] = Query(None, description="Filter featured skills only"),
-        search: Optional[str] = Query(None, description="Search skills by name or description"),
+        category: str | None = Query(None, description="Filter by category"),
+        level: str | None = Query(None, description="Filter by proficiency level"),
+        featured: bool | None = Query(None, description="Filter featured skills only"),
+        search: str | None = Query(None, description="Search skills by name or description"),
         skip: int = Query(0, ge=0, description="Number of skills to skip"),
         limit: int = Query(100, ge=1, le=100, description="Maximum number of skills to return"),
-        service: SkillsService = Depends(get_service)
+        service: SkillsService = Depends(get_service),
+        request_logger: RequestLogger = RequestLogger
     ):
         """
         Get skills with various filtering options
@@ -75,25 +93,48 @@ def create_app() -> FastAPI:
             SkillsListResponse: List of skills matching criteria
         """
         try:
+            request_logger.info(
+                "Processing skills request",
+                extra={
+                    "category": category,
+                    "level": level,
+                    "featured": featured,
+                    "search": search,
+                    "skip": skip,
+                    "limit": limit,
+                    "event_type": "skills_request"
+                }
+            )
+
             # Handle different filtering options
             if search:
-                return await service.search_skills(search)
+                result = await service.search_skills(search)
             elif featured:
-                return await service.get_featured_skills()
+                result = await service.get_featured_skills()
             elif category:
-                return await service.get_skills_by_category(category)
+                result = await service.get_skills_by_category(category)
             elif level:
-                return await service.get_skills_by_level(level)
+                result = await service.get_skills_by_level(level)
             else:
-                return await service.get_all_skills(skip=skip, limit=limit)
+                result = await service.get_all_skills(skip=skip, limit=limit)
+
+            return result
 
         except ValueError as e:
+            request_logger.warning(
+                "Skills validation error",
+                extra={"error": str(e), "event_type": "validation_error"}
+            )
             raise HTTPException(
                 status_code=400,
                 detail=str(e)
             )
         except Exception as e:
-            logger.error(f"Error retrieving skills: {str(e)}")
+            request_logger.error(
+                "Error retrieving skills",
+                extra={"error": str(e), "event_type": "skills_error"},
+                exc_info=True
+            )
             raise HTTPException(
                 status_code=500,
                 detail="Internal server error"
@@ -224,26 +265,27 @@ def create_app() -> FastAPI:
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request, exc):
         """Custom HTTP exception handler"""
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={
-                "error": exc.detail,
-                "status_code": exc.status_code,
-                "service": "skills"
-            }
+        return create_error_response(
+            error=exc.detail,
+            error_code="HTTP_ERROR",
+            status_code=exc.status_code
         )
 
     @app.exception_handler(Exception)
     async def general_exception_handler(request, exc):
         """General exception handler"""
-        logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Internal server error",
-                "status_code": 500,
-                "service": "skills"
+        logger.exception(
+            "Unhandled exception in skills service",
+            extra={
+                "error": str(exc),
+                "service": "skills",
+                "event_type": "unhandled_exception"
             }
+        )
+        return create_error_response(
+            error="Internal server error",
+            error_code="INTERNAL_ERROR",
+            status_code=500
         )
 
     return app

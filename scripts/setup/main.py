@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 import yaml
+import importlib.util
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
@@ -13,6 +14,13 @@ from typing import Dict, List, Any, Optional, Tuple
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from utils.flags_to_dict import flags_to_dict
+
+# Import directo del dockerfile_generator usando importlib
+dockerfile_generator_path = os.path.join(os.path.dirname(__file__), 'dockerfile_generator.py')
+spec = importlib.util.spec_from_file_location("dockerfile_generator", dockerfile_generator_path)
+dockerfile_generator_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(dockerfile_generator_module)
+LambdaDockerfileGenerator = dockerfile_generator_module.LambdaDockerfileGenerator
 
 
 def detect_project_root(start_path: str = None) -> str:
@@ -1028,7 +1036,7 @@ def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) ->
 
 def generate_temp_dockerfile(lambda_name: str, config: Dict[str, Any], project_path: str, verbose: bool = False) -> str:
     """
-    Genera un Dockerfile temporal para una función lambda basado en config.yml.
+    Genera un Dockerfile temporal para una función lambda usando LambdaDockerfileGenerator.
 
     Args:
         lambda_name: Nombre de la función lambda
@@ -1039,59 +1047,21 @@ def generate_temp_dockerfile(lambda_name: str, config: Dict[str, Any], project_p
     Returns:
         str: Ruta del Dockerfile temporal generado
     """
-    lambda_config = config.get('lambda_function', {})
-    runtime = lambda_config.get('runtime', 'python3.13')
-    handler = lambda_config.get('handler', 'src.lambda_function.lambda_handler')
-    service_name = lambda_config.get('service_name', lambda_name)
-
-    # Crear contenido del Dockerfile dinámicamente
-    dockerfile_content = f"""# {lambda_name.title()} Lambda - Temporary Dockerfile
-# Generated dynamically from config.yml - Portfolio Serverless System
-# Runtime: {runtime} | Handler: {handler} | Service: {service_name}
-
-FROM public.ecr.aws/lambda/{runtime.replace('python', 'python:')}
-
-# Install development dependencies
-RUN yum update -y && \\
-    yum install -y curl && \\
-    yum clean all
-
-# Set work directory
-WORKDIR ${{LAMBDA_TASK_ROOT}}
-
-# Copy requirements and install dependencies
-COPY lambda/{lambda_name}/setup/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
-COPY lambda/{lambda_name}/src/ ./
-
-# Copy shared modules (if any)
-COPY shared/ ./shared/ 2>/dev/null || true
-
-# Development mode configuration from config.yml
-ENV PYTHONPATH="${{LAMBDA_TASK_ROOT}}:${{PYTHONPATH}}"
-ENV LOG_LEVEL=debug
-ENV ENVIRONMENT=development
-ENV SERVICE_NAME={service_name}
-
-# Expose port for development
-EXPOSE 8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \\
-    CMD curl -f http://localhost:8080/health || exit 1
-
-# Start development server (FastAPI with uvicorn)
-CMD ["uvicorn", "main:create_app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
-"""
-
-    # Escribir Dockerfile temporal
-    dockerfile_path = Path(project_path) / "server" / "lambda" / lambda_name / "Dockerfile.dev"
-
     try:
-        with open(dockerfile_path, 'w', encoding='utf-8') as f:
-            f.write(dockerfile_content)
+        # Crear generador de Dockerfiles
+        generator = LambdaDockerfileGenerator(project_path)
+
+        # Extraer configuración del lambda
+        lambda_config = config.get('lambda_function', {})
+        environment = 'dev'  # Para desarrollo local
+
+        # Generar Dockerfile temporal con herramientas habilitadas
+        dockerfile_path = generator.create_dockerfile(
+            service_name=lambda_name,
+            environment=environment,
+            include_tools=True,  # ✅ Habilitar instalación de herramientas
+            extra_packages=[]  # Usar solo paquetes base compatibles con AWS Lambda
+        )
 
         if verbose:
             print(f"✅ Dockerfile temporal generado: {dockerfile_path}")
@@ -1142,7 +1112,7 @@ def generate_temp_dockerfiles(project_path: str, verbose: bool = False) -> List[
 
 def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> None:
     """
-    Limpia los Dockerfiles temporales después de usarlos.
+    Limpia los Dockerfiles temporales usando LambdaDockerfileGenerator.
 
     Args:
         temp_files: Lista de rutas de archivos temporales
@@ -1154,17 +1124,33 @@ def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> No
     if verbose:
         print("🧹 Limpiando Dockerfiles temporales...")
 
-    for file_path in temp_files:
-        try:
-            Path(file_path).unlink(missing_ok=True)
-            if verbose:
-                print(f"   🗑️  Eliminado: {file_path}")
-        except Exception as e:
-            if verbose:
-                print(f"   ⚠️  Error eliminando {file_path}: {e}")
+    # Determinar project_path desde el primer archivo temporal
+    if temp_files:
+        first_file = Path(temp_files[0])
+        # Navegar desde server/lambda/service/Dockerfile.dev hacia la raíz
+        project_path = first_file.parents[3]  # service → lambda → server → proyecto
 
-    if verbose:
-        print(f"✅ Limpiados {len(temp_files)} archivos temporales")
+        # Crear generador para limpieza
+        generator = LambdaDockerfileGenerator(str(project_path))
+
+        # Limpiar todos los Dockerfiles del entorno dev
+        cleaned_count = generator.cleanup_all_dockerfiles(environment='dev')
+
+        if verbose:
+            print(f"✅ Limpiados {cleaned_count} Dockerfiles temporales")
+    else:
+        # Fallback al método manual si no hay archivos
+        for file_path in temp_files:
+            try:
+                Path(file_path).unlink(missing_ok=True)
+                if verbose:
+                    print(f"   🗑️  Eliminado: {file_path}")
+            except Exception as e:
+                if verbose:
+                    print(f"   ⚠️  Error eliminando {file_path}: {e}")
+
+        if verbose:
+            print(f"✅ Limpiados {len(temp_files)} archivos temporales")
 
 
 def check_localstack_ready(max_attempts: int = 30, verbose: bool = False) -> bool:

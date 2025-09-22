@@ -1,0 +1,75 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+LABEL maintainer="Pablo Contreras <pablo@bypabloc.dev>"
+LABEL project="Portfolio Serverless System"
+LABEL service="{service_name}-lambda"
+LABEL environment="{environment}"
+
+# Install basic system packages for tools
+RUN microdnf install -y tar gzip && microdnf clean all
+
+{development_tools}
+
+WORKDIR ${{LAMBDA_TASK_ROOT}}
+
+# Copy shared utilities first (better Docker layer caching)
+COPY server/shared/ ./shared/
+
+# Copy service-specific requirements and config
+COPY server/lambda/{service_name}/setup/requirements.txt .
+COPY server/lambda/{service_name}/setup/config.yml /var/task/config.yml
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install tools installer dependencies
+RUN pip install --no-cache-dir pyyaml httpx
+
+# Copy service source code and ensure files are in Lambda task root
+COPY server/lambda/{service_name}/src/ ./src/
+RUN if [ -d "./src" ]; then cp ./src/* . 2>/dev/null || true; fi && rm -rf ./src
+
+# Copy Python tools installer system
+RUN mkdir -p /var/task/scripts/setup
+COPY scripts/setup/lambda_tools_installer.py /var/task/scripts/setup/lambda_tools_installer.py
+COPY scripts/setup/install_lambda_tools.sh /usr/local/bin/install_lambda_tools.sh
+RUN chmod +x /usr/local/bin/install_lambda_tools.sh
+
+# Copy tools scripts (tree.sh and other tools)
+RUN mkdir -p /var/task/scripts/setup/tools
+COPY scripts/setup/tools/tree.sh /var/task/scripts/setup/tools/tree.sh
+RUN chmod +x /var/task/scripts/setup/tools/tree.sh
+
+# Set Python path to include shared modules
+ENV PYTHONPATH="${{LAMBDA_TASK_ROOT}}:${{LAMBDA_TASK_ROOT}}/shared:${{PYTHONPATH}}"
+
+# Environment-specific configurations
+ENV LOG_LEVEL={log_level}
+ENV ENVIRONMENT={environment}
+ENV SERVICE_NAME={service_name}-lambda
+ENV SERVICE_VERSION=1.0.0
+ENV FASTAPI_DEBUG={debug_mode}
+
+{development_config}
+
+# Create useful directories for development
+RUN mkdir -p /tmp/logs /tmp/cache /tmp/debug
+
+# Expose port for local development (Lambda Runtime Interface Emulator)
+EXPOSE 8080
+
+# Health check for container orchestration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Auto-install Lambda tools on container startup (non-blocking)
+RUN echo '#!/bin/bash' > /usr/local/bin/entrypoint-with-tools.sh && \
+    echo '/usr/local/bin/install_lambda_tools.sh {service_name} 2>/dev/null &' >> /usr/local/bin/entrypoint-with-tools.sh && \
+    echo 'exec "$@"' >> /usr/local/bin/entrypoint-with-tools.sh && \
+    chmod +x /usr/local/bin/entrypoint-with-tools.sh
+
+# Set custom entrypoint that auto-installs tools based on config
+ENTRYPOINT ["/usr/local/bin/entrypoint-with-tools.sh"]
+
+# Lambda handler entry point
+CMD ["lambda_function.lambda_handler"]
