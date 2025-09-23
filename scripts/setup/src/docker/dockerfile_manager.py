@@ -36,8 +36,7 @@ def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) ->
                     with open(config_file, 'r', encoding='utf-8') as f:
                         config = yaml.safe_load(f)
                         configs[lambda_dir.name] = config
-                        if verbose:
-                            print(f"✅ Configuración lambda encontrada: {lambda_dir.name}")
+                        # Ocultar configuraciones individuales para salida más limpia
                 except yaml.YAMLError as e:
                     if verbose:
                         print(f"❌ Error parseando {config_file}: {e}")
@@ -114,27 +113,24 @@ def generate_temp_dockerfiles(project_path: str, verbose: bool = False) -> List[
     Returns:
         List[str]: Lista de rutas de Dockerfiles temporales generados
     """
-    if verbose:
-        print("🐳 Generando Dockerfiles temporales para funciones Lambda...")
+    print("🐳 Generando Dockerfiles temporales para funciones Lambda...")
 
     temp_files = []
 
     # Obtener configuraciones de todas las lambdas
-    lambda_configs = find_lambda_api_gateway_configs(project_path, verbose)
+    lambda_configs = find_lambda_api_gateway_configs(project_path, False)  # Sin verbose detallado
 
     if not lambda_configs:
-        if verbose:
-            print("⚠️  No se encontraron configuraciones de lambda")
+        print("⚠️  No se encontraron configuraciones de lambda")
         return temp_files
 
-    # Generar Dockerfile para cada lambda
+    # Generar Dockerfile para cada lambda (sin mostrar cada archivo)
     for lambda_name, config in lambda_configs.items():
-        dockerfile_path = generate_temp_dockerfile(lambda_name, config, project_path, verbose)
+        dockerfile_path = generate_temp_dockerfile(lambda_name, config, project_path, False)
         if dockerfile_path:
             temp_files.append(dockerfile_path)
 
-    if verbose:
-        print(f"✅ Generados {len(temp_files)} Dockerfiles temporales")
+    print(f"✅ Generados {len(temp_files)} Dockerfiles temporales")
 
     return temp_files
 
@@ -150,8 +146,8 @@ def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> No
     if not temp_files:
         return
 
-    if verbose:
-        print("🧹 Limpiando Dockerfiles temporales...")
+    # Ocultar mensajes detallados de limpieza
+    pass
 
     # Determinar project_path desde el primer archivo temporal
     if temp_files:

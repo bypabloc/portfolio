@@ -64,9 +64,10 @@ services:
       - ../website/public:/website/public
       - ../website/tests:/website/tests
       - /website/node_modules  # Anonymous volume
-    ports:
-      - "4321:4321"
-      - "24678:24678"  # Vite HMR port
+    # No external ports - only accessible through API Gateway
+    # ports:
+    #   - "4321:4321"
+    #   - "24678:24678"  # Vite HMR port
 
 
   # Development Tools

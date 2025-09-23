@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  api-gateway:
+    environment:
+    - UNIFIED_PORT=4321
+    - NGINX_ENV=local
+    ports:
+    - 4321:80
+    depends_on:
+    - personal-info-lambda
+    - experience-lambda
+    - skills-lambda
+    - projects-lambda
+    - portfolio-website
+  personal-info-lambda:
+    environment:
+    - SERVICE_PATH=/personal-info
+    - SERVICE_NAME=personal-info
+    - UNIFIED_PORT=4321
+    - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+    networks:
+    - portfolio-network
+  experience-lambda:
+    environment:
+    - SERVICE_PATH=/experience
+    - SERVICE_NAME=experience
+    - UNIFIED_PORT=4321
+    - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+    networks:
+    - portfolio-network
+  skills-lambda:
+    environment:
+    - SERVICE_PATH=/skills
+    - SERVICE_NAME=skills
+    - UNIFIED_PORT=4321
+    - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+    networks:
+    - portfolio-network
+  projects-lambda:
+    environment:
+    - SERVICE_PATH=/projects
+    - SERVICE_NAME=projects
+    - UNIFIED_PORT=4321
+    - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+    networks:
+    - portfolio-network

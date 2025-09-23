@@ -94,8 +94,8 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
     """
     start_time = time.time()
 
-    if verbose:
-        print(f"⏳ Esperando que los servicios estén healthy (max {max_wait}s)...")
+    # Mostrar mensaje simple de inicio
+    print("⏳ Verificando estado de servicios...")
 
     while time.time() - start_time < max_wait:
         # Verificar estado de servicios
@@ -119,20 +119,13 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
                         if not services or service_name in services:
                             if state != 'running':
                                 all_healthy = False
-                                if verbose:
-                                    print(f"   ⏳ {service_name}: {state}")
                             elif health and health != 'healthy':
                                 all_healthy = False
-                                if verbose:
-                                    print(f"   🔄 {service_name}: {health}")
-                            elif verbose:
-                                print(f"   ✅ {service_name}: healthy")
+
                     except json.JSONDecodeError:
                         continue
 
                 if all_healthy:
-                    if verbose:
-                        print("✅ Todos los servicios están healthy")
                     return True
 
             except Exception as e:
@@ -141,8 +134,7 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
 
         time.sleep(2)
 
-    if verbose:
-        print(f"⚠️  Timeout esperando servicios healthy después de {max_wait}s")
+    print(f"⚠️  Timeout esperando servicios healthy después de {max_wait}s")
     return False
 
 

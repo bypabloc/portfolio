@@ -9,80 +9,41 @@ from typing import Dict, List, Any, Tuple
 
 def show_available_urls(verbose: bool = False):
     """
-    Muestra dinámicamente las URLs disponibles basándose en servicios corriendo.
+    Muestra las URLs principales del sistema de forma concisa.
 
     Args:
-        verbose: Mostrar información detallada
+        verbose: Mostrar información detallada (para debug)
     """
-    from .service_info import get_running_services, categorize_services_by_type
+    from .service_info import get_running_services
 
-    print("\n" + "="*80)
-    print("🌐 URLs DISPONIBLES DEL SISTEMA (DINÁMICO)")
-    print("="*80)
+    print("\n" + "="*60)
+    print("🌐 SISTEMA PORTFOLIO")
+    print("="*60)
 
     # Obtener servicios corriendo dinámicamente
     services = get_running_services()
 
     if not services:
         print("\n❌ No se detectaron servicios corriendo")
-        print("💡 Ejecuta: python scripts/run.py setup --action=up --services=all --env=local")
-        print("="*80 + "\n")
         return
 
-    # Agrupar servicios por tipo
-    service_types = categorize_services_by_type(services)
+    # URLs principales
+    print(f"\n🎨 Website:     http://localhost:4321")
+    print(f"🚪 API Gateway: http://localhost:4321/api")
 
-    # Mostrar servicios por categoría
-    total_services = 0
+    # Contar servicios operativos
+    healthy_services = sum(1 for _, info in services.items() if info.get('healthy', False))
+    total_services = len(services)
 
-    # Website
-    if service_types['website']:
-        print(f"\n🎨 WEBSITE")
-        for name, info in service_types['website']:
-            show_service_urls(info, verbose)
-            total_services += 1
+    print(f"\n✅ {healthy_services}/{total_services} servicios operativos")
 
-    # API Gateway
-    if service_types['gateway']:
-        print(f"\n🚪 API GATEWAY")
-        for name, info in service_types['gateway']:
-            show_service_urls(info, verbose)
-            total_services += 1
+    if verbose:
+        print(f"\n📋 Servicios disponibles:")
+        for name, info in services.items():
+            status = "✅" if info.get('healthy', False) else "🔄"
+            print(f"   {status} {name}")
 
-    # Lambda Microservices
-    if service_types['lambda']:
-        print(f"\n🔧 MICROSERVICIOS LAMBDA ({len(service_types['lambda'])} servicios)")
-        for name, info in service_types['lambda']:
-            show_service_urls(info, verbose)
-            total_services += 1
-
-    # Database
-    if service_types['database']:
-        print(f"\n🗄️ DATABASE")
-        for name, info in service_types['database']:
-            show_service_urls(info, verbose)
-            total_services += 1
-
-    # Other services
-    if service_types['other']:
-        print(f"\n⚙️ OTROS SERVICIOS")
-        for name, info in service_types['other']:
-            show_service_urls(info, verbose)
-            total_services += 1
-
-    # Testing commands dinámicos
-    show_dynamic_testing_commands(services)
-
-    # Summary
-    print("\n" + "="*80)
-    print(f"✅ Sistema Portfolio: {total_services} servicios operativos")
-
-    # Detectar tecnologías dinámicamente
-    tech_summary = detect_tech_stack(services)
-    for tech in tech_summary:
-        print(f"{tech}")
-
-    print("="*80 + "\n")
+    print("="*60)
 
 
 def show_service_urls(service_info: Dict[str, Any], verbose: bool = False):

@@ -16,6 +16,8 @@ volumes:
     driver: local
   postgres-logs:
     driver: local
+  pgadmin-data:
+    driver: local
 
 services:
   # Database Layer - PostgreSQL 17 with Neon compatibility
@@ -35,8 +37,7 @@ services:
       - postgres-logs:/var/log/postgresql
       - ./database/init-portfolio-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - ../db/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-    ports:
-      - "5432:5432"
+    # No external ports - only accessible through API Gateway network
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.10
@@ -73,7 +74,7 @@ services:
   #     start_period: 60s
 
 
-  # FastAPI Services - Direct HTTP access for development
+  # FastAPI Services - Internal access only (no external ports)
   personal-info-lambda:
     build:
       context: ../server
@@ -87,13 +88,12 @@ services:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
-    ports:
-      - "8001:8080"
+    # No external ports - only accessible through API Gateway
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.21
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/2015-03-31/functions/function/invocations", "-d", '{"httpMethod":"GET","path":"/health","headers":{},"body":""}']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -112,13 +112,12 @@ services:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
-    ports:
-      - "8002:8080"
+    # No external ports - only accessible through API Gateway
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.22
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/2015-03-31/functions/function/invocations", "-d", '{"httpMethod":"GET","path":"/health","headers":{},"body":""}']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -137,13 +136,12 @@ services:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
-    ports:
-      - "8003:8080"
+    # No external ports - only accessible through API Gateway
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.23
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/2015-03-31/functions/function/invocations", "-d", '{"httpMethod":"GET","path":"/health","headers":{},"body":""}']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -162,19 +160,44 @@ services:
       - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
-    ports:
-      - "8004:8080"
+    # No external ports - only accessible through API Gateway
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.24
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:8080/2015-03-31/functions/function/invocations", "-d", '{"httpMethod":"GET","path":"/health","headers":{},"body":""}']
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
 
-  # API Gateway - Nginx proxy for microservices routing
+  # pgAdmin - Database Administration Interface
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: unless-stopped
+    depends_on:
+      portfolio-db:
+        condition: service_healthy
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@portfolio.local
+      - PGADMIN_DEFAULT_PASSWORD=portfolio_admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    # No external ports - only accessible through API Gateway at /db
+    networks:
+      portfolio-network:
+        ipv4_address: 172.26.0.25
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # API Gateway - Unified entry point for all services (dynamically configured)
   api-gateway:
     build:
       context: ./proxy
@@ -186,15 +209,19 @@ services:
       - skills-lambda
       - experience-lambda
       - projects-lambda
+      - portfolio-website
+      - pgadmin
     environment:
       - NGINX_ENV=development
+      - UNIFIED_PORT=${UNIFIED_PORT:-4321}
     ports:
-      - "8090:80"
+      - "${UNIFIED_PORT:-4321}:80"
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.30
     volumes:
-      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Use dynamically generated nginx config if exists, fallback to static
+      - ./generated/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./proxy/conf.d:/etc/nginx/conf.d:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
@@ -213,14 +240,15 @@ services:
     container_name: portfolio-website
     restart: unless-stopped
     depends_on:
-      - api-gateway
+      portfolio-db:
+        condition: service_healthy
     environment:
       - NODE_ENV=development
       - ASTRO_PORT=4321
-      - API_BASE_URL=http://api-gateway
+      - API_BASE_URL=http://localhost:${UNIFIED_PORT:-4321}/api
       - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-    ports:
-      - "4321:4321"
+      - UNIFIED_PORT=${UNIFIED_PORT:-4321}
+    # No external ports - only accessible through API Gateway
     networks:
       portfolio-network:
         ipv4_address: 172.26.0.40

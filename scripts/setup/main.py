@@ -39,6 +39,10 @@ from actions.status_action import execute_status_action
 from actions.logs_action import execute_logs_action
 from actions.clean_action import execute_clean_action
 
+# Imports de generación dinámica
+from config_generator import ConfigGenerator
+from docker_cleanup import DockerCleanupManager
+
 
 def main(flags: Dict[str, Any]) -> None:
     """
@@ -59,6 +63,14 @@ def main(flags: Dict[str, Any]) -> None:
         print(f"🏗️  Proyecto detectado en: {project_path}")
         print(f"🌍 Entorno: {env}")
         print(f"⚡ Acción: {action}")
+
+    # 1.5. Generación dinámica de configuraciones
+    unified_port = get_unified_port_from_env(project_path, env)
+    if action in ['up', 'restart', 'build']:
+        generate_dynamic_configurations(project_path, unified_port, env, verbose)
+
+    # Configurar limpieza automática para todas las acciones
+    setup_automatic_cleanup(project_path, env, verbose)
 
     # 2. Verificaciones de pre-requisitos
     if not verify_docker_environment(verbose):
@@ -140,9 +152,8 @@ def verify_docker_environment(verbose: bool) -> bool:
         print("Instale Docker Compose: https://docs.docker.com/compose/install/")
         return False
 
-    if verbose:
-        print(f"✅ {docker_msg}")
-        print(f"✅ {compose_msg}")
+    print(f"✅ 🐳 Docker disponible y funcionando")
+    print(f"✅ Docker Compose v2 disponible")
 
     return True
 
@@ -167,10 +178,9 @@ def verify_project_configuration(project_path: str, verbose: bool) -> bool:
         print("  - ./setup/docker-compose.yml")
         return False
 
-    if verbose:
-        print(f"📁 Configuración Docker encontrada:")
-        for env_name, file_path in config_files.items():
-            print(f"  - {env_name}: {file_path}")
+    # Solo mostrar la configuración que se está usando
+    base_path = config_files.get('base', '').replace(project_path, '.')
+    print(f"📁 Configuración Docker: {base_path}")
 
     return True
 
@@ -241,3 +251,88 @@ def execute_action(action: str, cmd_parts: list, compose_services: list,
     else:
         print(f"❌ Acción no reconocida: {action}")
         return 1
+
+
+def get_unified_port_from_env(project_path: str, env: str) -> int:
+    """
+    Obtiene el puerto unificado desde el archivo .env correspondiente.
+
+    Args:
+        project_path: Ruta del proyecto
+        env: Entorno (local, dev, test, etc.)
+
+    Returns:
+        int: Puerto unificado (default 4321)
+    """
+    env_files = find_env_files(project_path)
+    unified_port = 4321  # Default
+
+    if env in env_files:
+        env_file = env_files[env]
+        try:
+            with open(env_file, 'r') as f:
+                for line in f:
+                    if line.startswith('UNIFIED_PORT='):
+                        unified_port = int(line.split('=')[1].strip())
+                        break
+        except (FileNotFoundError, ValueError):
+            pass
+
+    return unified_port
+
+
+def generate_dynamic_configurations(project_path: str, unified_port: int, env: str, verbose: bool):
+    """
+    Genera configuraciones dinámicas basadas en config.yml de servicios.
+
+    Args:
+        project_path: Ruta del proyecto
+        unified_port: Puerto unificado
+        env: Entorno
+        verbose: Mostrar información detallada
+    """
+    if verbose:
+        print(f"🔧 Generando configuraciones dinámicas para puerto {unified_port}...")
+
+    try:
+        # Inicializar generador de configuración
+        generator = ConfigGenerator(project_path, unified_port)
+
+        # Descubrir servicios
+        services = generator.discover_services()
+        if verbose:
+            print(f"🔍 Servicios descubiertos: {len(services)}")
+
+        # Generar configuraciones
+        output_dir = os.path.join(project_path, "setup", "generated")
+        files = generator.save_configurations(output_dir)
+
+        if verbose:
+            print(f"✅ Configuraciones generadas")
+
+    except Exception as e:
+        print(f"⚠️ Error generando configuraciones dinámicas: {e}")
+        if verbose:
+            import traceback
+            traceback.print_exc()
+
+
+def setup_automatic_cleanup(project_path: str, env: str, verbose: bool):
+    """
+    Configura limpieza automática de Docker al finalizar.
+
+    Args:
+        project_path: Ruta del proyecto
+        env: Entorno
+        verbose: Mostrar información detallada
+    """
+    try:
+        cleanup_manager = DockerCleanupManager(project_path)
+        cleanup_manager.register_exit_handler(env)
+
+        if verbose:
+            print(f"🔧 Limpieza automática configurada para entorno: {env}")
+
+    except Exception as e:
+        if verbose:
+            print(f"⚠️ No se pudo configurar limpieza automática: {e}")

@@ -498,21 +498,37 @@ docker system prune
 4. **Ver logs**: `python scripts/run.py setup --action=logs --follow-logs`
 5. **Limpiar al terminar**: `python scripts/run.py setup --action=down --env=local`
 
-### 🎯 URLs de API Gateway (Puerto 8090)
-Utilizar siempre las URLs consolidadas en lugar de los puertos individuales:
+### 🚀 ARQUITECTURA UNIFICADA - TODO EN PUERTO ${UNIFIED_PORT:-4321}
+**NUEVA ESTRUCTURA**: Todos los servicios consolidados en un solo puerto
 
 ```bash
-# ✅ RECOMENDADO - URLs consolidadas
-curl http://localhost:8090/api/personal-info
-curl http://localhost:8090/api/skills
-curl http://localhost:8090/api/experience
-curl http://localhost:8090/api/projects
+# 🎯 PUERTO ÚNICO CONFIGURADO VIA ENV
+UNIFIED_PORT=4321  # Default, configurable en archivos .env
 
-# ⚠️ SOLO PARA DEBUG - Puertos individuales
-curl http://localhost:8001/personal-info  # Solo si necesitas debug directo
-curl http://localhost:8002/skills
-curl http://localhost:8003/experience
-curl http://localhost:8004/projects
+# 🎨 WEBSITE - RAÍZ DEL SISTEMA
+curl http://localhost:4321/                    # Página principal (Astro v5)
+curl http://localhost:4321/about               # Información personal
+curl http://localhost:4321/projects            # Portfolio de proyectos
+
+# 🚪 API GATEWAY - MICROSERVICIOS CONSOLIDADOS
+curl http://localhost:4321/health              # Health check unificado
+curl http://localhost:4321/api/personal-info   # API información personal
+curl http://localhost:4321/api/skills          # API habilidades técnicas
+curl http://localhost:4321/api/experience      # API experiencia profesional
+curl http://localhost:4321/api/projects        # API portfolio de proyectos
+
+# 📚 DOCUMENTACIÓN API INTEGRADA
+curl http://localhost:4321/api/personal-info/docs   # Swagger UI personal-info
+curl http://localhost:4321/api/skills/docs          # Swagger UI skills
+curl http://localhost:4321/api/experience/redoc     # ReDoc experience
+curl http://localhost:4321/api/projects/docs        # Swagger UI projects
+
+# 🗄️ DATABASE ADMIN - INTERFAZ GRÁFICA
+open http://localhost:4321/db/                 # pgAdmin (admin@portfolio.local / portfolio_admin)
+
+# ❌ PUERTOS INDIVIDUALES YA NO DISPONIBLES
+# Los puertos 8001-8004 y 8090 ya no están expuestos externamente
+# Todo el acceso se hace a través del puerto unificado 4321
 ```
 
 ### 🐳 Troubleshooting Efectivo
