@@ -234,7 +234,7 @@ def get_database_endpoints(port: int) -> List[Tuple[str, str, str]]:
     return [
         ("CONNECT", f"postgresql://postgres:portfolio_password@localhost:{port}/portfolio_local", "Conexión directa"),
         ("CLI", f"psql -h localhost -p {port} -U postgres -d portfolio_local", "Cliente de línea de comandos"),
-        ("GUI", "Adminer/pgAdmin", "Interfaz gráfica"),
+        ("GUI", "psql CLI / third-party tools", "Interfaz gráfica"),
         ("DOCKER", "docker exec -it portfolio-db psql -U postgres -d portfolio_local", "Conexión via Docker")
     ]
 

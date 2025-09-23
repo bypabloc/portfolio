@@ -523,8 +523,6 @@ curl http://localhost:4321/api/skills/docs          # Swagger UI skills
 curl http://localhost:4321/api/experience/redoc     # ReDoc experience
 curl http://localhost:4321/api/projects/docs        # Swagger UI projects
 
-# 🗄️ DATABASE ADMIN - INTERFAZ GRÁFICA
-open http://localhost:4321/db/                 # pgAdmin (admin@portfolio.local / portfolio_admin)
 
 # ❌ PUERTOS INDIVIDUALES YA NO DISPONIBLES
 # Los puertos 8001-8004 y 8090 ya no están expuestos externamente
