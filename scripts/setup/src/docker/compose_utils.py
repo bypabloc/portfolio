@@ -67,7 +67,16 @@ def execute_docker_compose_command(cmd_parts: List[str], action: str, services: 
         full_cmd.extend(services)
 
     if verbose:
-        print(f"🐳 Ejecutando: {' '.join(full_cmd)}")
+        # Convertir paths absolutos a relativos para mostrar
+        display_cmd = []
+        for part in full_cmd:
+            if part.startswith('/home/') and 'projects' in part:
+                # Convertir path absoluto a relativo
+                relative_part = part.replace(project_path, '.')
+                display_cmd.append(relative_part)
+            else:
+                display_cmd.append(part)
+        print(f"🐳 Ejecutando: {' '.join(display_cmd)}")
 
     try:
         result = subprocess.run(full_cmd, cwd=project_path, capture_output=True, text=True)
@@ -80,7 +89,7 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
                            project_path: str, max_wait: int = 60,
                            verbose: bool = False) -> bool:
     """
-    Espera a que los servicios estén healthy.
+    Espera a que los servicios estén healthy con loading indicators individuales.
 
     Args:
         cmd_parts: Comando base docker-compose
@@ -94,7 +103,11 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
     """
     start_time = time.time()
 
-    # Mostrar mensaje simple de inicio
+    # Estado de servicios para el loading
+    service_status = {}
+    loading_chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    loading_index = 0
+
     print("⏳ Verificando estado de servicios...")
 
     while time.time() - start_time < max_wait:
@@ -107,6 +120,7 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
                 # Parsear JSON output de docker-compose ps
                 lines = [line for line in result.stdout.strip().split('\n') if line.strip()]
                 all_healthy = True
+                current_services = {}
 
                 for line in lines:
                     try:
@@ -117,15 +131,36 @@ def wait_for_services_health(cmd_parts: List[str], services: List[str],
 
                         # Si no hay services específicos, verificar todos
                         if not services or service_name in services:
-                            if state != 'running':
-                                all_healthy = False
-                            elif health and health != 'healthy':
+                            current_services[service_name] = {
+                                'state': state,
+                                'health': health,
+                                'healthy': state == 'running' and (not health or health == 'healthy')
+                            }
+
+                            if not current_services[service_name]['healthy']:
                                 all_healthy = False
 
                     except json.JSONDecodeError:
                         continue
 
+                # Mostrar loading por servicio
+                loading_char = loading_chars[loading_index % len(loading_chars)]
+                loading_index += 1
+
+                # Limpiar líneas anteriores y mostrar estado
+                print('\r\033[K', end='')  # Limpiar línea
+                for service_name, status in current_services.items():
+                    if status['healthy']:
+                        print(f"✅ {service_name}: healthy", end="  ")
+                    else:
+                        state_desc = f"{status['state']}"
+                        if status['health'] and status['health'] != 'healthy':
+                            state_desc += f" ({status['health']})"
+                        print(f"{loading_char} {service_name}: {state_desc}", end="  ")
+                print()  # Nueva línea al final
+
                 if all_healthy:
+                    print()  # Línea extra para separar del siguiente output
                     return True
 
             except Exception as e:
@@ -220,28 +255,37 @@ def get_compose_port_mappings(cmd_parts: List[str], project_path: str) -> Dict[s
     port_mappings = {}
 
     try:
-        cmd = cmd_parts + ['port']
+        cmd = cmd_parts + ['ps', '--format', 'json']
         result = subprocess.run(cmd, cwd=project_path, capture_output=True, text=True)
 
         if result.returncode == 0 and result.stdout.strip():
-            lines = result.stdout.strip().split('\n')
-            current_service = None
+            lines = [line for line in result.stdout.strip().split('\n') if line.strip()]
 
             for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+                try:
+                    service_info = json.loads(line)
+                    service_name = service_info.get('Service', '')
+                    publishers = service_info.get('Publishers', [])
 
-                # Las líneas de servicios no tienen ":"
-                if ':' in line:
-                    # Esta es una línea de puerto
-                    if current_service:
-                        if current_service not in port_mappings:
-                            port_mappings[current_service] = []
-                        port_mappings[current_service].append(line)
-                else:
-                    # Esta es una línea de servicio
-                    current_service = line
+                    if service_name and publishers:
+                        port_mappings[service_name] = []
+                        for publisher in publishers:
+                            if isinstance(publisher, dict):
+                                published_port = publisher.get('PublishedPort')
+                                target_port = publisher.get('TargetPort')
+                                protocol = publisher.get('Protocol', 'tcp')
+                                if published_port and target_port:
+                                    port_mappings[service_name].append(
+                                        f"{published_port}:{target_port}/{protocol}"
+                                    )
+                            elif isinstance(publisher, str) and ':' in publisher:
+                                # Formato string directo (fallback)
+                                port_mappings[service_name].append(publisher)
+
+                except json.JSONDecodeError:
+                    continue
+                except Exception:
+                    continue
 
     except Exception:
         pass

@@ -31,6 +31,20 @@ def show_available_urls(verbose: bool = False):
     print(f"\n🎨 Website:     http://localhost:4321")
     print(f"🚪 API Gateway: http://localhost:4321/api")
 
+    # Información de base de datos
+    db_service = None
+    for name, info in services.items():
+        if info.get('type') == 'database' or 'db' in name.lower() or 'postgres' in name.lower():
+            db_service = info
+            break
+
+    if db_service:
+        db_status = "✅" if db_service.get('healthy', False) else "🔄"
+        db_port = db_service.get('port', 5432)
+        print(f"🗄️  Database:    localhost:{db_port} {db_status}")
+        if db_service.get('healthy', False):
+            print(f"    └── Conexión: psql -h localhost -p {db_port} -U postgres -d portfolio_local")
+
     # Contar servicios operativos
     healthy_services = sum(1 for _, info in services.items() if info.get('healthy', False))
     total_services = len(services)
@@ -41,7 +55,8 @@ def show_available_urls(verbose: bool = False):
         print(f"\n📋 Servicios disponibles:")
         for name, info in services.items():
             status = "✅" if info.get('healthy', False) else "🔄"
-            print(f"   {status} {name}")
+            service_type = info.get('type', 'unknown')
+            print(f"   {status} {name} ({service_type})")
 
     print("="*60)
 

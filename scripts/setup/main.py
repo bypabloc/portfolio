@@ -60,7 +60,9 @@ def main(flags: Dict[str, Any]) -> None:
     server_services_list = flags.get('server_services_list', [])
 
     if verbose:
-        print(f"🏗️  Proyecto detectado en: {project_path}")
+        # Mostrar path relativo en lugar de absoluto
+        relative_path = project_path.replace(os.path.expanduser("~"), "~")
+        print(f"🏗️  Proyecto detectado en: {relative_path}")
         print(f"🌍 Entorno: {env}")
         print(f"⚡ Acción: {action}")
 
@@ -112,9 +114,9 @@ def main(flags: Dict[str, Any]) -> None:
         sys.exit(exit_code)
 
     finally:
-        # 9. Limpieza de recursos temporales
+        # 9. Limpieza de recursos temporales (silenciosa)
         if temp_dockerfiles:
-            cleanup_temp_dockerfiles(temp_dockerfiles, verbose)
+            cleanup_temp_dockerfiles(temp_dockerfiles, False)  # Siempre silenciosa
 
 
 def verify_docker_environment(verbose: bool) -> bool:
@@ -178,9 +180,13 @@ def verify_project_configuration(project_path: str, verbose: bool) -> bool:
         print("  - ./setup/docker-compose.yml")
         return False
 
-    # Solo mostrar la configuración que se está usando
-    base_path = config_files.get('base', '').replace(project_path, '.')
-    print(f"📁 Configuración Docker: {base_path}")
+    # Solo mostrar la configuración que se está usando con path relativo
+    base_path = config_files.get('base', '')
+    if project_path in base_path:
+        relative_base_path = base_path.replace(project_path, '.')
+    else:
+        relative_base_path = base_path
+    print(f"📁 Configuración Docker: {relative_base_path}")
 
     return True
 
@@ -197,7 +203,9 @@ def setup_environment_variables(project_path: str, env: str, verbose: bool) -> N
     env_files = find_env_files(project_path)
     if env in env_files:
         if verbose:
-            print(f"📄 Variables de entorno: {env_files[env]}")
+            # Mostrar path relativo
+            relative_env_path = env_files[env].replace(project_path, '.')
+            print(f"📄 Variables de entorno: {relative_env_path}")
         set_env_for_compose(env_files[env])
     elif verbose:
         print(f"⚠️  No se encontró archivo .env para entorno {env}")

@@ -36,7 +36,6 @@ def find_lambda_api_gateway_configs(project_path: str, verbose: bool = False) ->
                     with open(config_file, 'r', encoding='utf-8') as f:
                         config = yaml.safe_load(f)
                         configs[lambda_dir.name] = config
-                        # Ocultar configuraciones individuales para salida más limpia
                 except yaml.YAMLError as e:
                     if verbose:
                         print(f"❌ Error parseando {config_file}: {e}")
@@ -91,9 +90,7 @@ def generate_temp_dockerfile(lambda_name: str, config: Dict[str, Any], project_p
             extra_packages=[]  # Usar solo paquetes base compatibles con AWS Lambda
         )
 
-        if verbose:
-            print(f"✅ Dockerfile temporal generado: {dockerfile_path}")
-
+        # No mostrar paths individuales para salida más limpia
         return str(dockerfile_path)
 
     except Exception as e:
@@ -146,8 +143,7 @@ def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> No
     if not temp_files:
         return
 
-    # Ocultar mensajes detallados de limpieza
-    pass
+    # Limpieza silenciosa - no mostrar detalles al usuario
 
     # Determinar project_path desde el primer archivo temporal
     if temp_files:
@@ -175,8 +171,8 @@ def cleanup_temp_dockerfiles(temp_files: List[str], verbose: bool = False) -> No
             # Limpiar todos los Dockerfiles del entorno dev
             cleaned_count = generator.cleanup_all_dockerfiles(environment='dev')
 
-            if verbose:
-                print(f"✅ Limpiados {cleaned_count} Dockerfiles temporales")
+            # Limpieza completada silenciosamente
+            pass
 
         except Exception as e:
             if verbose:
@@ -200,11 +196,8 @@ def _manual_cleanup_dockerfiles(temp_files: List[str], verbose: bool = False) ->
     for file_path in temp_files:
         try:
             Path(file_path).unlink(missing_ok=True)
-            if verbose:
-                print(f"   🗑️  Eliminado: {file_path}")
         except Exception as e:
-            if verbose:
-                print(f"   ⚠️  Error eliminando {file_path}: {e}")
+            # Silencioso: no mostrar errores de limpieza al usuario
+            pass
 
-    if verbose:
-        print(f"✅ Limpiados {len(temp_files)} archivos temporales (método manual)")
+    # Limpieza completada silenciosamente

@@ -142,7 +142,7 @@ RUN echo 'alias python="python3"' >> /root/.bashrc && \\
         # Write to file
         dockerfile_path.write_text(content)
 
-        print(f"✅ Generated Dockerfile: {dockerfile_path}")
+        # No mostrar paths individuales de Dockerfiles
         return dockerfile_path
 
     def cleanup_dockerfile(self, service_name: str, environment: str = "dev") -> bool:
@@ -185,10 +185,10 @@ RUN echo 'alias python="python3"' >> /root/.bashrc && \\
                 dockerfile_path = service_dir / pattern
                 if dockerfile_path.exists():
                     dockerfile_path.unlink()
-                    print(f"🧹 Cleaned up: {dockerfile_path}")
+                    # No mostrar paths individuales
                     cleaned += 1
 
-        print(f"🧹 Total Dockerfiles cleaned: {cleaned}")
+        # Solo mostrar total sin detalles
         return cleaned
 
 

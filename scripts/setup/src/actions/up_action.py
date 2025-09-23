@@ -53,7 +53,7 @@ def execute_up_action(cmd_parts: List[str], compose_services: List[str],
     )
 
     if exit_code == 0:
-        print("✅ Servicios levantados exitosamente")
+        print("✅ Contenedores iniciados correctamente")
 
         if detach:
             # Esperar a que servicios estén healthy

@@ -82,8 +82,7 @@ def show_port_usage(port: int) -> None:
     Args:
         port: Puerto a investigar
     """
-    print(f"⚠️  Puerto {port} está en uso:")
-
+    # No mostrar mensaje inicial duplicado, solo los detalles
     try:
         result = subprocess.run(['lsof', f'-i:{port}'], capture_output=True, text=True)
         if result.returncode == 0 and result.stdout.strip():

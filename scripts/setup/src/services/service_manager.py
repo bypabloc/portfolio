@@ -57,7 +57,7 @@ def validate_services_configuration(services_list: List[str], server_services_li
 
 def get_service_ports_mapping() -> Dict[str, List[int]]:
     """
-    Obtiene el mapeo de servicios a puertos.
+    Obtiene el mapeo de servicios a puertos para arquitectura unificada.
 
     Returns:
         Dict[str, List[int]]: Mapeo de servicios a puertos
@@ -65,9 +65,10 @@ def get_service_ports_mapping() -> Dict[str, List[int]]:
     return {
         'app': [4321],
         'website': [4321],
-        'server': [8001, 8002, 8003, 8004],
-        'gateway': [8080],
-        'db': [5432]
+        'server': [],  # Los microservicios server no exponen puertos individuales
+        'gateway': [],  # El gateway está integrado en el puerto unificado
+        'db': [],  # La base de datos no expone puerto externo en arquitectura unificada
+        'all': [4321]  # Solo el puerto unificado
     }
 
 
@@ -85,8 +86,8 @@ def get_required_ports_for_services(services_list: List[str]) -> List[int]:
     ports_to_check = set()
 
     if 'all' in services_list:
-        for service_ports_list in service_ports.values():
-            ports_to_check.update(service_ports_list)
+        # En arquitectura unificada, solo verificar puerto 4321
+        ports_to_check.add(4321)
     else:
         for service in services_list:
             if service in service_ports:

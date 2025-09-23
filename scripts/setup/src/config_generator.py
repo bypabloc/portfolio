@@ -47,7 +47,7 @@ class ConfigGenerator:
                     try:
                         service = self._parse_service_config(config_file)
                         services.append(service)
-                        print(f"✅ Discovered service: {service.name} -> {service.path}")
+                        # No mostrar servicios individuales por defecto
                     except Exception as e:
                         print(f"❌ Failed to parse {config_file}: {e}")
 
@@ -327,21 +327,19 @@ http {{
         nginx_file = output_path / "nginx.conf"
         with open(nginx_file, 'w') as f:
             f.write(nginx_config)
-        print(f"✅ Generated nginx config: {nginx_file}")
+        # Ocultar paths específicos, solo mostrar resumen
 
         # Generate docker compose override
         compose_override = self.generate_docker_compose_override()
         compose_file = output_path / "docker-compose.generated.yml"
         with open(compose_file, 'w') as f:
             f.write(compose_override)
-        print(f"✅ Generated docker compose: {compose_file}")
 
         # Generate service URLs
         urls_json = self.generate_service_urls_json()
         urls_file = output_path / "service-urls.json"
         with open(urls_file, 'w') as f:
             f.write(urls_json)
-        print(f"✅ Generated service URLs: {urls_file}")
 
         return {
             'nginx_config': nginx_file,
