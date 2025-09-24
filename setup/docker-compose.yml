@@ -46,6 +46,37 @@ services:
       retries: 3
       start_period: 40s
 
+  # Database Admin Service - HTTP interface for PostgreSQL management
+  portfolio-db-admin:
+    build:
+      context: ./database
+      dockerfile: db-admin.Dockerfile
+    container_name: portfolio-db-admin
+    restart: unless-stopped
+    depends_on:
+      portfolio-db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DB_HOST=portfolio-db
+      - DB_PORT=5432
+      - DB_NAME=portfolio_local
+      - DB_USER=postgres
+      - DB_PASSWORD=portfolio_password
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=portfolio_admin
+      - LOG_LEVEL=info
+    # No external ports - only accessible through API Gateway
+    networks:
+      portfolio-network:
+        ipv4_address: 172.26.0.11
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # Neon Proxy - WebSocket and HTTP proxy for serverless driver compatibility
   # Temporarily disabled - heavy build process, not critical for development
   # neon-proxy:
@@ -183,6 +214,7 @@ services:
       - experience-lambda
       - projects-lambda
       - portfolio-website
+      - portfolio-db-admin
     environment:
       - NGINX_ENV=development
       - UNIFIED_PORT=${UNIFIED_PORT:-4321}

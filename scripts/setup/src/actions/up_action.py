@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from docker.compose_utils import execute_docker_compose_command, wait_for_services_health, follow_services_logs
 from display.status_display import show_services_status
 from display.url_display import show_available_urls
+from display.db_connection_display import show_database_connection_info
 from localstack.localstack_manager import setup_localstack_api_gateway
 
 
@@ -81,6 +82,9 @@ def execute_up_action(cmd_parts: List[str], compose_services: List[str],
 
             # Mostrar URLs disponibles del sistema
             show_available_urls(verbose)
+
+            # Mostrar información de conexión a base de datos si se levantó DB
+            show_database_connection_info(services_list, verbose)
 
             # Seguir logs si se solicitó
             if follow_logs:
