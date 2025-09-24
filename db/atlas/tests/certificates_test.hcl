@@ -1,0 +1,37 @@
+# Atlas Tests: certificates
+# Generado: 2025-09-23T22:04:32.013807
+
+# Test 1: Verificar que la tabla existe
+test "schema" "certificates_table_exists" {
+  exec {
+    sql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'certificates';"
+    output = "1"
+  }
+}
+
+# Test 2: Verificar columnas esperadas
+test "schema" "certificates_columns_exist" {
+  exec {
+    sql = "SELECT COUNT(*) FROM information_schema.columns WHERE table_name = 'certificates';"
+    output = "9"
+  }
+}
+
+# Test 3: Verificar integridad de datos
+test "data" "certificates_data_integrity" {
+  exec {
+    sql = "SELECT COUNT(*) FROM certificates;"
+    output = "11"
+  }
+
+  # Test 4: Verificar primary key
+  exec {
+    sql = "SELECT COUNT(*) FROM certificates WHERE id IS NULL;"
+    output = "0"
+  }
+
+  # Test 5: Verificar valores de status
+  exec {
+    sql = "SELECT DISTINCT status FROM certificates WHERE status NOT IN ('active', 'inactive', 'pending');"
+  }
+}
