@@ -17,7 +17,7 @@ lambda_function:
   shared_modules:
     - database
     - models
-    - repository
+    - repositories  # Changed from 'repository' to 'repositories'
     - config
     - utils
     - exceptions

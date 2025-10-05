@@ -1,0 +1,7 @@
+# Lambda-specific dependencies for users service
+# Shared dependencies are in server/shared/requirements.txt
+
+# Add any Lambda-specific dependencies here if needed
+# Example:
+# redis==5.0.0  # If this Lambda needs Redis
+# boto3==1.34.0  # If this Lambda needs specific AWS services

@@ -1,30 +1,46 @@
-FROM public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.13
 
 LABEL maintainer="Pablo Contreras <pablo@bypabloc.dev>"
 LABEL project="Portfolio Serverless System"
 LABEL service="{service_name}-lambda"
 LABEL environment="{environment}"
 
-# Install basic system packages for tools
-RUN microdnf install -y tar gzip && microdnf clean all
+# Install basic system packages for tools + build dependencies for Python packages
+# gcc and python3-devel needed for compiling asyncpg from source
+RUN microdnf install -y tar gzip gcc python3-devel && microdnf clean all
 
 {development_tools}
 
 WORKDIR ${{LAMBDA_TASK_ROOT}}
 
-# Copy shared utilities first (better Docker layer caching)
-COPY shared/ ./shared/
+# ============================================================================
+# STAGE 1: Install shared dependencies and copy shared code
+# ============================================================================
 
-# Copy service-specific requirements and config
-COPY lambda/{service_name}/setup/requirements.txt .
-COPY lambda/{service_name}/setup/config.yml /var/task/config.yml
+# Copy shared requirements FIRST (better Docker layer caching)
+COPY shared/requirements.txt /tmp/shared-requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install shared dependencies (FastAPI, SQLModel, AsyncPG, etc.)
+RUN pip install --no-cache-dir -r /tmp/shared-requirements.txt
 
-# Copy service source code and ensure files are in Lambda task root
-COPY lambda/{service_name}/src/ ./src/
-RUN if [ -d "./src" ]; then cp ./src/* . 2>/dev/null || true; fi && rm -rf ./src
+# Copy shared code (models, database, repositories, schemas)
+# This makes server/shared/ available as a Python module
+COPY shared/ ${{LAMBDA_TASK_ROOT}}/shared/
+
+# ============================================================================
+# STAGE 2: Install Lambda-specific dependencies
+# ============================================================================
+
+# Copy Lambda-specific requirements (if any additional deps needed)
+COPY lambda/{service_name}/setup/requirements.txt /tmp/lambda-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/lambda-requirements.txt || true
+
+# ============================================================================
+# STAGE 3: Copy Lambda function code
+# ============================================================================
+
+# Copy Lambda function code to Lambda task root
+COPY lambda/{service_name}/src/ ${{LAMBDA_TASK_ROOT}}/
 
 # Set Python path to include shared modules
 ENV PYTHONPATH="${{LAMBDA_TASK_ROOT}}:${{LAMBDA_TASK_ROOT}}/shared:${{PYTHONPATH}}"
@@ -43,11 +59,6 @@ RUN mkdir -p /tmp/logs /tmp/cache /tmp/debug
 
 # Expose port for local development (Lambda Runtime Interface Emulator)
 EXPOSE 8080
-
-# Health check for container orchestration
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
-
 
 # Lambda handler entry point
 CMD ["lambda_function.lambda_handler"]

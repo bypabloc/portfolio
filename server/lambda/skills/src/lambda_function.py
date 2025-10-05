@@ -1,139 +1,62 @@
 """
-Skills Lambda Function
-Portfolio Serverless System - Skills Management Service
+AWS Lambda handler for Skills service using FastAPI + SQLModel.
 
-FastAPI + AWS Lambda handler with Mangum adapter
-Handles skills CRUD operations
+This Lambda manages technical and soft skills.
+
+:Authors:
+    - Pablo Contreras
+
+:Created:
+    - 2025/01/19
 """
 
-import json
-import logging
-from typing import Dict, Any
-
+from functools import lru_cache
+from shared.logger import logger
 from mangum import Mangum
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from aws_lambda_powertools import Logger, Tracer, Metrics
-from aws_lambda_powertools.metrics import MetricUnit
 
-from src.main import create_app
+from main import app
 
-# Initialize AWS Lambda Powertools
-logger = Logger(service="skills")
-tracer = Tracer(service="skills")
-metrics = Metrics(namespace="portfolio-system", service="skills")
 
-# Create FastAPI application
-app = create_app()
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@lru_cache(maxsize=1)
+def create_handler():
+    """Create cached Mangum handler for FastAPI app."""
+    return Mangum(app, lifespan="auto", api_gateway_base_path="/prod")
 
-# Add Lambda Powertools middleware
-@app.middleware("http")
-async def add_correlation_id(request, call_next):
-    """Add correlation ID for tracing"""
-    correlation_id = request.headers.get("x-correlation-id", "unknown")
-    logger.set_correlation_id(correlation_id)
 
-    response = await call_next(request)
-    response.headers["x-correlation-id"] = correlation_id
-    return response
+handler_instance = create_handler()
 
-# Health check endpoint
-@app.get("/health")
-@tracer.capture_method
-async def health_check():
-    """Health check endpoint for container orchestration"""
-    metrics.add_metric(name="HealthCheck", unit=MetricUnit.Count, value=1)
 
-    return {
-        "status": "healthy",
-        "service": "skills",
-        "version": "1.0.0"
-    }
+def lambda_handler(event, context):
+    """AWS Lambda entry point for Skills service."""
+    logger.info(
+        "Skills Lambda invocation started",
+        extra={
+            "request_id": context.aws_request_id,
+            "function_name": context.function_name,
+            "event_path": event.get("path", "unknown"),
+            "http_method": event.get("httpMethod", "unknown")
+        }
+    )
 
-# Lambda handler using Mangum
-handler = Mangum(app, lifespan="off")
 
-@tracer.capture_lambda_handler
-@logger.inject_lambda_context
-@metrics.log_metrics(capture_cold_start_metric=True)
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """
-    AWS Lambda handler function
-
-    Args:
-        event: AWS Lambda event
-        context: AWS Lambda context
-
-    Returns:
-        HTTP response from FastAPI application
-    """
     try:
-        # Log the incoming event
-        logger.info(
-            "Processing request",
-            extra={
-                "event_type": event.get("httpMethod", "unknown"),
-                "path": event.get("path", "unknown"),
-                "request_id": context.aws_request_id if context else "local"
-            }
-        )
+        response = handler_instance(event, context)
 
-        # Add cold start metric
-        if hasattr(context, 'get_remaining_time_in_millis'):
-            metrics.add_metric(
-                name="ColdStart",
-                unit=MetricUnit.Count,
-                value=1
-            )
-
-        # Process the request through Mangum
-        response = handler(event, context)
-
-        # Log successful response
-        logger.info(
-            "Request processed successfully",
-            extra={
-                "status_code": response.get("statusCode", 200),
-                "request_id": context.aws_request_id if context else "local"
-            }
-        )
+        logger.info("Request processed successfully", extra={
+            "status_code": response.get("statusCode", "unknown")
+        })
 
         return response
 
     except Exception as e:
-        # Log error with full context
-        logger.error(
-            "Error processing request",
-            exc_info=True,
-            extra={
-                "error": str(e),
-                "event": json.dumps(event),
-                "request_id": context.aws_request_id if context else "local"
-            }
-        )
+        logger.error(f"Lambda invocation failed: {str(e)}", exc_info=True)
 
-        # Add error metric
-        metrics.add_metric(name="Errors", unit=MetricUnit.Count, value=1)
-
-        # Return error response
         return {
             "statusCode": 500,
             "headers": {
                 "Content-Type": "application/json",
-                "x-correlation-id": event.get("headers", {}).get("x-correlation-id", "unknown")
+                "Access-Control-Allow-Origin": "*"
             },
-            "body": json.dumps({
-                "error": "Internal server error",
-                "message": "An unexpected error occurred",
-                "request_id": context.aws_request_id if context else "local"
-            })
+            "body": '{"error": "Internal server error"}'
         }

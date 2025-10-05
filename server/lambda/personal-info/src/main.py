@@ -1,158 +1,77 @@
 """
-Personal Info Service - FastAPI Application
-Portfolio Serverless System
+FastAPI application for Personal Info service.
 
-Main application factory and route definitions
+Uses shared SQLModel models for users and user_attributes with EAV pattern.
+
+:Authors:
+    - Pablo Contreras
+
+:Created:
+    - 2025/01/19
 """
 
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import JSONResponse
-from typing import Dict, Any, Optional
-import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+import os
 
-from models import PersonalInfoResponse, PersonalInfoUpdate, ContactInfoResponse
-from repository import PersonalInfoRepositoryWrapper
-from service import PersonalInfoService
+# Import shared models
+from shared.models import HealthResponse
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Import routers
+from routers import users
 
-def create_app() -> FastAPI:
+# Custom logger
+from shared.logger import logger
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """
-    Create and configure FastAPI application
+    Manage FastAPI application lifecycle.
 
-    Returns:
-        FastAPI: Configured application instance
+    Note: In Lambda, this runs only on cold starts.
     """
-    app = FastAPI(
-        title="Personal Info Service",
-        description="Portfolio Serverless System - Personal Information Management",
+    # Startup
+    logger.info("Personal Info Lambda starting up")
+    yield
+    # Shutdown
+    logger.info("Personal Info Lambda shutting down")
+
+
+# FastAPI app configuration
+app = FastAPI(
+    title="Personal Info API",
+    description="Manages user information and attributes using EAV pattern",
+    version="1.0.0",
+    docs_url="/docs" if os.getenv("ENVIRONMENT") == "dev" else None,
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT") == "dev" else None,
+    lifespan=lifespan
+)
+
+# CORS middleware for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure properly for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(users.router, prefix="/personal-info", tags=["users"])
+
+
+# Health check endpoint
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint for Lambda function."""
+    return HealthResponse(
+        status="healthy",
+        service="personal-info-api",
+        timestamp=datetime.utcnow().isoformat(),
         version="1.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc"
+        database="SQLModel + AsyncPG"
     )
-
-    # Dependency injection
-    def get_repository() -> PersonalInfoRepositoryWrapper:
-        return PersonalInfoRepositoryWrapper()
-
-    def get_service(repository: PersonalInfoRepositoryWrapper = Depends(get_repository)) -> PersonalInfoService:
-        return PersonalInfoService(repository)
-
-    @app.get("/", response_model=Dict[str, str])
-    async def root():
-        """Root endpoint"""
-        return {
-            "service": "personal-info",
-            "status": "running",
-            "version": "1.0.0"
-        }
-
-    @app.get("/health", response_model=Dict[str, str])
-    async def health_check():
-        """Health check endpoint for container orchestration"""
-        return {
-            "status": "healthy",
-            "service": "personal-info",
-            "version": "1.0.0"
-        }
-
-    @app.get("/personal-info", response_model=PersonalInfoResponse)
-    async def get_personal_info(
-        service: PersonalInfoService = Depends(get_service)
-    ):
-        """
-        Get personal information
-
-        Returns:
-            PersonalInfoResponse: Personal information data
-        """
-        try:
-            personal_info = await service.get_personal_info()
-            if not personal_info:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Personal information not found"
-                )
-            return personal_info
-
-        except Exception as e:
-            logger.error(f"Error retrieving personal info: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error"
-            )
-
-    @app.put("/personal-info", response_model=PersonalInfoResponse)
-    async def update_personal_info(
-        update_data: PersonalInfoUpdate,
-        service: PersonalInfoService = Depends(get_service)
-    ):
-        """
-        Update personal information
-
-        Args:
-            update_data: Personal information update data
-
-        Returns:
-            PersonalInfoResponse: Updated personal information
-        """
-        try:
-            updated_info = await service.update_personal_info(update_data)
-            return updated_info
-
-        except Exception as e:
-            logger.error(f"Error updating personal info: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error"
-            )
-
-    @app.get("/personal-info/contact", response_model=ContactInfoResponse)
-    async def get_contact_info(
-        service: PersonalInfoService = Depends(get_service)
-    ):
-        """
-        Get contact information only
-
-        Returns:
-            ContactInfoResponse: Contact information (email, phone, social links)
-        """
-        try:
-            contact_info = await service.get_contact_info()
-            return contact_info
-
-        except Exception as e:
-            logger.error(f"Error retrieving contact info: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error"
-            )
-
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(request, exc):
-        """Custom HTTP exception handler"""
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={
-                "error": exc.detail,
-                "status_code": exc.status_code,
-                "service": "personal-info"
-            }
-        )
-
-    @app.exception_handler(Exception)
-    async def general_exception_handler(request, exc):
-        """General exception handler"""
-        logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Internal server error",
-                "status_code": 500,
-                "service": "personal-info"
-            }
-        )
-
-    return app

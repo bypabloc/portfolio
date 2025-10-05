@@ -1,0 +1,19 @@
+# Server Shared Dependencies
+# Estas dependencias son compartidas por todas las Lambda functions
+
+# FastAPI + SQLModel + AsyncPG (Core)
+fastapi==0.115.0
+sqlmodel==0.0.22
+sqlalchemy[asyncio]==2.0.35
+asyncpg==0.30.0
+pydantic[email]==2.9.2
+pydantic-settings==2.5.2
+
+# AWS Lambda Integration
+mangum==0.18.0
+
+# Utilities
+python-multipart==0.0.17
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+uvicorn[standard]==0.34.0

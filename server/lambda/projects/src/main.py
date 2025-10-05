@@ -1,102 +1,62 @@
 """
-Projects Service - FastAPI Application
-Portfolio Serverless System
+FastAPI application for Projects service.
 
-Simple wrapper around existing lambda_function for development
+Uses shared SQLModel models for projects.
+
+:Authors:
+    - Pablo Contreras
+
+:Created:
+    - 2025/01/19
 """
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from typing import Dict, Any
-import logging
-import json
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from shared.logger import logger
+from datetime import datetime
+import os
 
-from lambda_function import lambda_handler
+from shared.models import HealthResponse
+from routers import projects
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-def create_app() -> FastAPI:
-    """
-    Create and configure FastAPI application
 
-    Returns:
-        FastAPI: Configured application instance
-    """
-    app = FastAPI(
-        title="Projects Service",
-        description="Portfolio Serverless System - Projects Management",
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage FastAPI application lifecycle."""
+    logger.info("Projects Lambda starting up")
+    yield
+    logger.info("Projects Lambda shutting down")
+
+
+app = FastAPI(
+    title="Projects API",
+    description="Manages portfolio projects",
+    version="1.0.0",
+    docs_url="/docs" if os.getenv("ENVIRONMENT") == "dev" else None,
+    redoc_url="/redoc" if os.getenv("ENVIRONMENT") == "dev" else None,
+    lifespan=lifespan
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(projects.router, prefix="/api/v1", tags=["projects"])
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Health check endpoint for Lambda function."""
+    return HealthResponse(
+        status="healthy",
+        service="projects-api",
+        timestamp=datetime.utcnow().isoformat(),
         version="1.0.0",
-        docs_url="/docs",
-        redoc_url="/redoc"
+        database="SQLModel + AsyncPG"
     )
-
-    @app.get("/", response_model=Dict[str, str])
-    async def root():
-        """Root endpoint"""
-        return {
-            "service": "projects",
-            "status": "running",
-            "version": "1.0.0"
-        }
-
-    @app.get("/health", response_model=Dict[str, str])
-    async def health_check():
-        """Health check endpoint for container orchestration"""
-        return {
-            "status": "healthy",
-            "service": "projects",
-            "version": "1.0.0"
-        }
-
-    @app.api_route("/projects", methods=["GET", "POST", "PUT", "DELETE"])
-    @app.api_route("/projects/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-    async def projects_handler(request: Request, path: str = ""):
-        """
-        Route all projects requests to lambda handler
-        """
-        try:
-            # Convert FastAPI request to lambda event format
-            event = {
-                "httpMethod": request.method,
-                "path": str(request.url.path),
-                "queryStringParameters": dict(request.query_params),
-                "headers": dict(request.headers),
-                "body": None
-            }
-
-            # Add body for POST/PUT requests
-            if request.method in ["POST", "PUT"]:
-                body = await request.body()
-                event["body"] = body.decode() if body else None
-
-            # Mock lambda context
-            class MockContext:
-                def __init__(self):
-                    self.aws_request_id = "mock-request-id"
-                    self.function_name = "projects-lambda"
-
-            context = MockContext()
-
-            # Call lambda handler
-            response = lambda_handler(event, context)
-
-            # Return FastAPI response
-            return JSONResponse(
-                content=json.loads(response.get("body", "{}")),
-                status_code=response.get("statusCode", 200),
-                headers=response.get("headers", {})
-            )
-
-        except Exception as e:
-            logger.error(f"Error in projects handler: {str(e)}")
-            return JSONResponse(
-                content={
-                    "error": "Internal server error",
-                    "service": "projects"
-                },
-                status_code=500
-            )
-
-    return app

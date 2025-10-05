@@ -3,7 +3,7 @@
 
 lambda_function:
   name: personal-info
-  description: "Personal information management Lambda function"
+  description: "Personal information and user attributes management Lambda function"
   language: python
   runtime: python3.13
   handler: src.lambda_function.lambda_handler
@@ -13,12 +13,11 @@ lambda_function:
   timeout: 30
   memory_size: 512
 
-
   # Shared modules this lambda uses
   shared_modules:
     - database
     - models
-    - repository
+    - repositories  # Changed from 'repository' to 'repositories'
     - config
     - utils
     - exceptions
@@ -30,7 +29,22 @@ api_gateway:
     - GET
     - POST
     - PUT
+    - PATCH
     - DELETE
+
+  # Sub-resources for enhanced API structure
+  sub_resources:
+    - path: "attributes"
+      description: "User attributes management"
+      methods:
+        - GET
+        - POST
+        - PATCH
+
+    - path: "profile"
+      description: "Complete user profile endpoint"
+      methods:
+        - GET
 
   # CORS configuration
   cors:
@@ -40,6 +54,7 @@ api_gateway:
       - "GET"
       - "POST"
       - "PUT"
+      - "PATCH"
       - "DELETE"
       - "OPTIONS"
     allow_headers:
@@ -83,3 +98,5 @@ health_check:
 # Monitoring configuration
 monitoring:
   cloudwatch_logs: true
+  metrics_enabled: true
+  xray_tracing: true

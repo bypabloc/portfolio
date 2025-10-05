@@ -88,8 +88,7 @@ class PaginationParams(BaseModel):
     )
     order_direction: str = Field(
         default="asc",
-        pattern="^(asc|desc)$",
-        description="Order direction"
+        description="Order direction (asc or desc)"
     )
 
 

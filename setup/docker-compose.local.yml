@@ -26,19 +26,79 @@ services:
 
   # Personal Info Lambda - Local development
   personal-info-lambda:
+    entrypoint: ["python", "-m", "uvicorn"]
+    command: ["main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     environment:
       - LOG_LEVEL=debug
       - DEBUG_MODE=true
-    # volumes:
-    #   - ../server/lambda/personal-info:/var/task:ro  # Lambda function code (disabled for Dockerfile testing)
+      - PYTHONPATH=/var/task:/var/task/shared
+    volumes:
+      - ../server/lambda/personal-info/src:/var/task  # Lambda function code
+      - ../server/shared:/var/task/shared  # Shared modules
+    working_dir: /var/task
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # Skills Lambda - Local development
   skills-lambda:
+    entrypoint: ["python", "-m", "uvicorn"]
+    command: ["main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
     environment:
       - LOG_LEVEL=debug
       - DEBUG_MODE=true
+      - PYTHONPATH=/var/task:/var/task/shared
     volumes:
-      - ../server/lambda/skills:/var/task:ro  # Lambda function code
+      - ../server/lambda/skills/src:/var/task  # Lambda function code
+      - ../server/shared:/var/task/shared  # Shared modules
+    working_dir: /var/task
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Experience Lambda - Local development
+  experience-lambda:
+    entrypoint: ["python", "-m", "uvicorn"]
+    command: ["main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+    environment:
+      - LOG_LEVEL=debug
+      - DEBUG_MODE=true
+      - PYTHONPATH=/var/task:/var/task/shared
+    volumes:
+      - ../server/lambda/experience/src:/var/task  # Lambda function code
+      - ../server/shared:/var/task/shared  # Shared modules
+    working_dir: /var/task
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Projects Lambda - Local development
+  projects-lambda:
+    entrypoint: ["python", "-m", "uvicorn"]
+    command: ["main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+    environment:
+      - LOG_LEVEL=debug
+      - DEBUG_MODE=true
+      - PYTHONPATH=/var/task:/var/task/shared
+    volumes:
+      - ../server/lambda/projects/src:/var/task  # Lambda function code
+      - ../server/shared:/var/task/shared  # Shared modules
+    working_dir: /var/task
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # API Gateway - Local development
   api-gateway:

@@ -14,30 +14,255 @@ Esta carpeta contiene toda la lógica del servidor organizada en microservicios 
 - 🎯 **SQLModel Benefits**: Triple funcionalidad - Table, Pydantic Model, SQLAlchemy Model
 - 🧩 **Zero Duplication**: Elimina duplicación entre modelos y schemas
 
+## 📐 Arquitectura Repository Pattern (OBLIGATORIO)
+
+### ✅ Principio Fundamental
+
+**Los Lambdas NUNCA importan directamente de `shared.models` o `shared.database`**
+
+```python
+# ❌ INCORRECTO - Lambda importando models/database directamente
+from shared.models import User, get_db_session
+
+@router.get("/users")
+async def get_users(session = Depends(get_db_session)):
+    users = await User.get_all(session)
+    return users
+
+# ✅ CORRECTO - Lambda usando SOLO repositories
+from shared.repositories import UserRepository
+
+@router.get("/users")
+async def get_users():
+    users = await UserRepository.get_all()
+    return users
+```
+
+### 📂 Arquitectura de 3 Capas
+
+```
+Lambda Routers → Repositories → Models → Database
+     ↓                ↓            ↓          ↓
+  FastAPI      Lógica de    SQLModel    PostgreSQL
+ Endpoints     Acceso Datos   Tables
+```
+
+**Responsabilidades:**
+
+1. **Lambda Routers** (src/routers/):
+   - Manejan requests HTTP
+   - Validación de entrada (Pydantic schemas)
+   - Solo importan de `shared.repositories`
+   - NO manejan sesiones de base de datos
+
+2. **Repositories** (shared/repositories/):
+   - Encapsulan lógica de acceso a datos
+   - Manejan sesiones internamente
+   - Importan de `shared.models` y `shared.database`
+   - Proveen interface limpia para lambdas
+
+3. **Models** (shared/models/):
+   - Definen estructura de datos (SQLModel)
+   - Contienen métodos helper de queries
+   - NO son usados directamente por lambdas
+
+### 🎯 Ejemplo Completo
+
+#### Repository Implementation (shared/repositories/):
+```python
+from shared.models import User
+from shared.database import get_db_session
+
+class UserRepository:
+    @classmethod
+    async def get_all(cls, skip: int = 0, limit: int = 100):
+        """Get all users - maneja sesión internamente"""
+        async for session in get_db_session():
+            try:
+                users = await User.get_all(session, skip=skip, limit=limit)
+                return users
+            finally:
+                await session.close()
+```
+
+#### Lambda Router (lambda/*/src/routers/):
+```python
+from shared.repositories import UserRepository
+
+@router.get("/users")
+async def get_users(skip: int = 0, limit: int = 100):
+    """Endpoint - usa SOLO repository"""
+    users = await UserRepository.get_all(skip=skip, limit=limit)
+    return [UserPublicResponse(...) for user in users]
+```
+
+## 📦 Sistema de Módulos Compartidos (config.yml)
+
+### ✅ Configuración de Shared Modules
+
+**IMPORTANTE**: Todos los archivos de lógica compartida (models, repositories, database, utils, etc.) deben estar en `server/shared/` y **NUNCA** duplicados en lambdas individuales.
+
+Cada lambda define qué módulos compartidos necesita en su archivo `setup/config.yml`:
+
+```yaml
+# server/lambda/skills/setup/config.yml
+lambda_function:
+  name: skills
+  # ...
+
+  # Shared modules this lambda uses
+  shared_modules:
+    - database      # Conexión a base de datos
+    - models        # SQLModel tables y schemas
+    - repositories  # Repository pattern classes
+    - config        # Configuración compartida
+    - utils         # Utilidades compartidas
+    - exceptions    # Excepciones personalizadas
+```
+
+### 🚫 Archivos Prohibidos en Lambdas Individuales
+
+**NUNCA crear estos archivos dentro de lambdas**:
+
+```
+❌ server/lambda/skills/src/models.py       # Debe estar en server/shared/models/
+❌ server/lambda/skills/src/repository.py   # Debe estar en server/shared/repositories/
+❌ server/lambda/skills/src/service.py      # Lógica en repositories, no services
+❌ server/lambda/skills/src/database.py     # Debe estar en server/shared/database.py
+```
+
+**✅ Estructura CORRECTA**:
+
+```
+server/
+├── shared/                           # TODO el código compartido aquí
+│   ├── models/                      # SQLModel tables
+│   │   ├── __init__.py
+│   │   ├── users.py
+│   │   ├── skills.py
+│   │   └── ...
+│   ├── repositories/                # Repository classes
+│   │   ├── __init__.py
+│   │   ├── user_repository.py
+│   │   ├── skill_repository.py
+│   │   └── ...
+│   ├── database.py                  # Conexión y sesiones
+│   ├── config.py                    # Configuración compartida
+│   ├── utils.py                     # Utilidades
+│   └── exceptions.py                # Excepciones custom
+│
+└── lambda/
+    └── skills/
+        ├── setup/
+        │   └── config.yml           # Define shared_modules aquí
+        └── src/
+            ├── lambda_function.py   # Handler de Lambda
+            ├── main.py              # FastAPI app
+            └── routers/             # Solo routers
+                └── skills.py        # Importa de shared.repositories
+```
+
+### 🔧 Cómo Funciona el Deploy
+
+El script de setup (scripts/setup) lee `config.yml` y copia solo los módulos necesarios:
+
+```python
+# scripts/setup lee config.yml
+shared_modules = config['lambda_function']['shared_modules']
+# ['database', 'models', 'repositories', 'config', 'utils', 'exceptions']
+
+# Copia cada módulo a la imagen Docker del lambda
+for module in shared_modules:
+    copy_shared_module(module, lambda_container)
+```
+
+### 📋 Shared Modules Disponibles
+
+Módulos que puedes incluir en `shared_modules`:
+
+- **`database`** - Conexión AsyncPG y gestión de sesiones
+- **`models`** - SQLModel tables (User, Skill, Project, Work, etc.)
+- **`repositories`** - Repository classes (UserRepository, SkillRepository, etc.)
+- **`config`** - Variables de configuración y settings
+- **`utils`** - Funciones de utilidad (attributes_to_dict, etc.)
+- **`exceptions`** - Excepciones personalizadas del sistema
+
+### ⚙️ Ejemplo Completo de config.yml
+
+```yaml
+# server/lambda/personal-info/setup/config.yml
+lambda_function:
+  name: personal-info
+  description: "Personal information and user attributes management"
+  language: python
+  runtime: python3.13
+  handler: src.lambda_function.lambda_handler
+  timeout: 30
+  memory_size: 512
+
+  # Módulos compartidos que este lambda necesita
+  shared_modules:
+    - database      # Para get_db_session()
+    - models        # Para User model y attributes
+    - repositories  # Para UserRepository
+    - config        # Para settings
+    - utils         # Para attributes_to_dict()
+    - exceptions    # Para custom exceptions
+
+# ... resto de configuración de API Gateway, CORS, etc.
+```
+
 ## 🏗️ Estructura del Servidor
 
 ```
 server/
-└── lambda/                         # AWS Lambda Functions (FastAPI + SQLModel + Mangum)
-    ├── personal-info/             # Información personal API
-    │   ├── setup/                 # Configuración y deployment
-    │   │   ├── .env              # Variables de entorno locales
-    │   │   ├── Dockerfile        # Container para desarrollo
-    │   │   └── requirements.txt  # FastAPI + SQLModel dependencies
-    │   └── src/                  # Código fuente de la función
-    │       ├── lambda_function.py   # Lambda handler con Mangum
-    │       ├── main.py             # FastAPI app principal
-    │       ├── models.py           # SQLModel models (Table + Pydantic)
-    │       └── repository.py       # Data access layer con SQLModel
-    ├── skills/                   # Gestión de habilidades API
-    │   ├── setup/               # [misma estructura setup/]
-    │   └── src/                 # [misma estructura src/]
-    ├── experience/              # Experiencia profesional API
-    │   ├── setup/               # [misma estructura setup/]
-    │   └── src/                 # [misma estructura src/]
-    └── projects/                # Portfolio de proyectos API
-        ├── setup/               # [misma estructura setup/]
-        └── src/                 # [misma estructura src/]
+├── lambda/                         # AWS Lambda Functions (FastAPI + Repository Pattern)
+│   ├── personal-info/             # Información personal API
+│   │   ├── setup/                 # Configuración y deployment
+│   │   │   ├── .env              # Variables de entorno locales
+│   │   │   ├── Dockerfile        # Container para desarrollo
+│   │   │   └── requirements.txt  # FastAPI dependencies
+│   │   └── src/                  # Código fuente de la función
+│   │       ├── lambda_function.py   # Lambda handler con Mangum
+│   │       ├── main.py             # FastAPI app principal
+│   │       └── routers/            # API routes (SOLO usan repositories)
+│   │           └── users.py        # User endpoints
+│   ├── skills/                   # Gestión de habilidades API
+│   │   ├── setup/               # [misma estructura setup/]
+│   │   └── src/
+│   │       └── routers/
+│   │           └── skills.py    # Skill endpoints
+│   ├── experience/              # Experiencia profesional API
+│   │   ├── setup/               # [misma estructura setup/]
+│   │   └── src/
+│   │       └── routers/
+│   │           ├── employers.py  # Employer endpoints
+│   │           ├── job_types.py  # JobType endpoints
+│   │           └── works.py      # Work endpoints
+│   └── projects/                # Portfolio de proyectos API
+│       ├── setup/               # [misma estructura setup/]
+│       └── src/
+│           └── routers/
+│               └── projects.py  # Project endpoints
+│
+└── shared/                      # Código compartido entre lambdas
+    ├── models/                  # SQLModel models (Table definitions)
+    │   ├── __init__.py
+    │   ├── users.py            # User + UserAttribute models
+    │   ├── skills.py           # Skill model
+    │   ├── projects.py         # Project model
+    │   └── works.py            # Employer, JobType, Work models
+    ├── database/                # Database connection management
+    │   ├── __init__.py
+    │   └── session.py          # AsyncPG session factory
+    └── repositories/            # Data access layer (Lambdas usan SOLO esto)
+        ├── __init__.py
+        ├── user_repository.py
+        ├── skill_repository.py
+        ├── project_repository.py
+        ├── employer_repository.py
+        ├── job_type_repository.py
+        └── work_repository.py
 ```
 
 ## 🎯 FastAPI + SQLModel Lambda Implementation Patterns

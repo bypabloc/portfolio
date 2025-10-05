@@ -12,13 +12,12 @@ Optimized for serverless environments with connection pooling.
 import os
 from typing import Optional, AsyncGenerator
 from contextlib import asynccontextmanager
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlmodel import SQLModel
-from aws_lambda_powertools import Logger
 from functools import lru_cache
 
-logger = Logger()
+from ..logger import logger
+
 
 
 class DatabaseManager:
@@ -97,7 +96,7 @@ class DatabaseManager:
         """
         if cls._session_factory is None:
             engine = await cls.get_engine()
-            cls._session_factory = sessionmaker(
+            cls._session_factory = async_sessionmaker(
                 bind=engine,
                 class_=AsyncSession,
                 expire_on_commit=False,  # Important for Lambda

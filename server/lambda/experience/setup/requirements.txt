@@ -1,38 +1,5 @@
-# Personal Info Service - Python Dependencies
-# FastAPI + AWS Lambda + Neon PostgreSQL
+# Lambda-specific dependencies for experience service
+# (Shared dependencies are in server/shared/requirements.txt)
 
-# Core Framework
-fastapi==0.115.5
-mangum==0.18.0
-uvicorn[standard]==0.32.1
-
-# Database
-asyncpg==0.29.0
-psycopg2-binary==2.9.10
-
-# AWS Lambda Runtime
-aws-lambda-powertools[all]==3.20.0
-boto3==1.35.80
-botocore==1.35.80
-
-# Data Validation and Serialization
-pydantic==2.10.3
-pydantic[email]==2.10.3
-
-# HTTP Client
-httpx==0.28.1
-aiofiles==24.1.0
-
-# Utilities
-python-multipart==0.0.20
-python-dotenv==1.0.1
-structlog==24.4.0
-
-# Development and Testing (for local development)
-pytest==8.3.4
-pytest-asyncio==0.24.0
-pytest-mock==3.14.0
-black==24.10.0
-isort==5.13.2
-mypy==1.13.0
-ruff==0.8.4
+# No additional dependencies required for this Lambda
+# All core dependencies (FastAPI, SQLModel, AsyncPG) come from shared/

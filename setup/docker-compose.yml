@@ -57,7 +57,7 @@ services:
       portfolio-db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - DB_HOST=portfolio-db
       - DB_PORT=5432
       - DB_NAME=portfolio_local
@@ -114,8 +114,8 @@ services:
       portfolio-db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     # No external ports - only accessible through API Gateway
     networks:
@@ -138,8 +138,8 @@ services:
       portfolio-db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     # No external ports - only accessible through API Gateway
     networks:
@@ -162,8 +162,8 @@ services:
       portfolio-db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     # No external ports - only accessible through API Gateway
     networks:
@@ -186,8 +186,8 @@ services:
       portfolio-db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - LOG_LEVEL=info
     # No external ports - only accessible through API Gateway
     networks:
@@ -250,7 +250,7 @@ services:
       - NODE_ENV=development
       - ASTRO_PORT=4321
       - API_BASE_URL=http://localhost:${UNIFIED_PORT:-4321}/api
-      - NEON_DATABASE_URL=postgresql://postgres:portfolio_password@portfolio-db:5432/portfolio_local
+      - NEON_DATABASE_URL=postgresql+asyncpg://postgres:portfolio_password@portfolio-db:5432/portfolio_local
       - UNIFIED_PORT=${UNIFIED_PORT:-4321}
     # No external ports - only accessible through API Gateway
     networks:

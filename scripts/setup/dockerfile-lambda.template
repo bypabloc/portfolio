@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.13
 
 LABEL maintainer="Pablo Contreras <pablo@bypabloc.dev>"
 LABEL project="Portfolio Serverless System"
@@ -12,33 +12,49 @@ RUN microdnf install -y tar gzip && microdnf clean all
 
 WORKDIR ${{LAMBDA_TASK_ROOT}}
 
-# Copy shared utilities first (better Docker layer caching)
-COPY server/shared/ ./shared/
+# ============================================================================
+# STAGE 1: Install shared dependencies and copy shared code
+# ============================================================================
 
-# Copy service-specific requirements and config
-COPY server/lambda/{service_name}/setup/requirements.txt .
-COPY server/lambda/{service_name}/setup/config.yml /var/task/config.yml
+# Copy shared requirements FIRST (better Docker layer caching)
+# Note: Build context is server/, so paths are relative to server/
+COPY shared/requirements.txt /tmp/shared-requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install shared dependencies (FastAPI, SQLModel, AsyncPG, etc.)
+RUN pip install --no-cache-dir -r /tmp/shared-requirements.txt
 
-# Install tools installer dependencies
+# Copy shared code (models, database, repositories, schemas)
+# This makes server/shared/ available as a Python module
+COPY shared/ ${{LAMBDA_TASK_ROOT}}/shared/
+
+# ============================================================================
+# STAGE 2: Install Lambda-specific dependencies
+# ============================================================================
+
+# Copy Lambda-specific requirements (if any additional deps needed)
+COPY lambda/{service_name}/setup/requirements.txt /tmp/lambda-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/lambda-requirements.txt || true
+
+# Install tools installer dependencies (for dev environment)
 RUN pip install --no-cache-dir pyyaml httpx
 
-# Copy service source code and ensure files are in Lambda task root
-COPY server/lambda/{service_name}/src/ ./src/
-RUN if [ -d "./src" ]; then cp ./src/* . 2>/dev/null || true; fi && rm -rf ./src
+# ============================================================================
+# STAGE 3: Copy Lambda function code and tools
+# ============================================================================
+
+# Copy Lambda function code to Lambda task root
+COPY lambda/{service_name}/src/ ${{LAMBDA_TASK_ROOT}}/
 
 # Copy Python tools installer system
-RUN mkdir -p /var/task/scripts/setup
-COPY scripts/setup/lambda_tools_installer.py /var/task/scripts/setup/lambda_tools_installer.py
+RUN mkdir -p ${{LAMBDA_TASK_ROOT}}/scripts/setup
+COPY scripts/setup/lambda_tools_installer.py ${{LAMBDA_TASK_ROOT}}/scripts/setup/lambda_tools_installer.py
 COPY scripts/setup/install_lambda_tools.sh /usr/local/bin/install_lambda_tools.sh
 RUN chmod +x /usr/local/bin/install_lambda_tools.sh
 
 # Copy tools scripts (tree.sh and other tools)
-RUN mkdir -p /var/task/scripts/setup/tools
-COPY scripts/setup/tools/tree.sh /var/task/scripts/setup/tools/tree.sh
-RUN chmod +x /var/task/scripts/setup/tools/tree.sh
+RUN mkdir -p ${{LAMBDA_TASK_ROOT}}/scripts/setup/tools
+COPY scripts/setup/tools/tree.sh ${{LAMBDA_TASK_ROOT}}/scripts/setup/tools/tree.sh
+RUN chmod +x ${{LAMBDA_TASK_ROOT}}/scripts/setup/tools/tree.sh
 
 # Set Python path to include shared modules
 ENV PYTHONPATH="${{LAMBDA_TASK_ROOT}}:${{LAMBDA_TASK_ROOT}}/shared:${{PYTHONPATH}}"

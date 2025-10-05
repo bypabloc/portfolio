@@ -1,141 +1,83 @@
 """
-Experience Lambda Function - Portfolio Serverless System
-Handles professional experience management and retrieval for the portfolio API
+AWS Lambda handler for Experience service using FastAPI + SQLModel.
+
+This Lambda manages work experience, employers, and job types.
+
+:Authors:
+    - Pablo Contreras
+
+:Created:
+    - 2025/01/19
 """
 
-import json
-import logging
-from typing import Dict, Any
+from functools import lru_cache
+from shared.logger import logger
+from mangum import Mangum
 
-# Configure logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# Import FastAPI app using shared models
+from main import app
 
-def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
+# AWS Lambda Powertools
+
+
+@lru_cache(maxsize=1)
+def create_handler():
     """
-    AWS Lambda handler for experience service.
-
-    Args:
-        event: Lambda event data
-        context: Lambda context object
+    Create cached Mangum handler for FastAPI app.
 
     Returns:
-        API Gateway compatible response
+        Mangum: Configured AWS Lambda handler
     """
+    return Mangum(
+        app,
+        lifespan="auto",
+        api_gateway_base_path="/prod"
+    )
+
+
+# Initialize handler at module level (cold start optimization)
+handler_instance = create_handler()
+
+
+def lambda_handler(event, context):
+    """
+    AWS Lambda entry point for Experience service.
+
+    Args:
+        event: API Gateway event
+        context: Lambda context
+
+    Returns:
+        HTTP response for API Gateway
+    """
+    # Log request details
+    logger.info(
+        "Experience Lambda invocation started",
+        extra={
+            "request_id": context.aws_request_id,
+            "function_name": context.function_name,
+            "event_path": event.get("path", "unknown"),
+            "http_method": event.get("httpMethod", "unknown")
+        }
+    )
+
+    # Add custom metrics
+
     try:
-        logger.info(f"Experience Lambda invoked with event: {json.dumps(event)}")
+        response = handler_instance(event, context)
 
-        # Extract HTTP method and path
-        http_method = event.get('httpMethod', 'GET')
-        path = event.get('path', '/experience')
+        # Add success metric
 
-        if http_method == 'GET':
-            return get_experience(event)
-        elif http_method == 'POST':
-            return create_experience(event)
-        elif http_method == 'PUT':
-            return update_experience(event)
-        elif http_method == 'DELETE':
-            return delete_experience(event)
-        else:
-            return {
-                'statusCode': 405,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({
-                    'error': 'Method not allowed',
-                    'method': http_method
-                })
-            }
+        return response
 
     except Exception as e:
-        logger.error(f"Error in experience lambda: {str(e)}", exc_info=True)
+        logger.error(f"Lambda invocation failed: {str(e)}", exc_info=True)
+
         return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
+            "statusCode": 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
             },
-            'body': json.dumps({
-                'error': 'Internal server error',
-                'message': str(e)
-            })
+            "body": '{"error": "Internal server error"}'
         }
-
-def get_experience(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Get experience list or specific experience."""
-    # TODO: Implement experience retrieval
-    experience = [
-        {
-            'id': '1',
-            'company': 'Destacame',
-            'position': 'Senior Full-Stack Developer',
-            'location': 'Santiago, Chile',
-            'start_date': '2021-03-01',
-            'end_date': None,
-            'is_current': True,
-            'description': 'Lead development of fintech applications using modern serverless architectures.',
-            'achievements': [
-                'Reduced application load time by 60% through serverless optimization',
-                'Implemented microservices architecture serving 100k+ daily transactions'
-            ],
-            'technologies': ['Vue.js', 'Python', 'AWS Lambda', 'PostgreSQL']
-        }
-    ]
-
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({
-            'experience': experience,
-            'total': len(experience)
-        })
-    }
-
-def create_experience(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Create a new experience."""
-    # TODO: Implement experience creation
-    return {
-        'statusCode': 201,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({
-            'message': 'Experience created successfully',
-            'experience': {'id': 'new-id'}
-        })
-    }
-
-def update_experience(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Update an existing experience."""
-    # TODO: Implement experience update
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({
-            'message': 'Experience updated successfully'
-        })
-    }
-
-def delete_experience(event: Dict[str, Any]) -> Dict[str, Any]:
-    """Delete an experience."""
-    # TODO: Implement experience deletion
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({
-            'message': 'Experience deleted successfully'
-        })
-    }
